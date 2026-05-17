@@ -62,10 +62,21 @@ export function plainTextToLexical(text: string) {
   }
 }
 
+function replaceFirstInsensitive(source: string, search: string, replacement: string): string {
+  const index = source.toLocaleLowerCase().indexOf(search.toLocaleLowerCase())
+
+  if (index === -1) {
+    return replacement
+  }
+
+  return `${source.slice(0, index)}${replacement}${source.slice(index + search.length)}`
+}
+
 export function coerceVisualEditorValue(
   fieldType: string,
   value: string | number,
   currentValue: unknown,
+  originalSegment?: string,
 ): unknown {
   if (fieldType === 'number') {
     const parsed = typeof value === 'number' ? value : Number(value)
@@ -78,6 +89,13 @@ export function coerceVisualEditorValue(
     }
 
     if (currentValue && typeof currentValue === 'object' && 'root' in (currentValue as object)) {
+      const currentPlain = lexicalToPlainText(currentValue)
+      const segment = originalSegment?.trim()
+
+      if (segment && currentPlain.toLocaleLowerCase().includes(segment.toLocaleLowerCase())) {
+        return plainTextToLexical(replaceFirstInsensitive(currentPlain, segment, value))
+      }
+
       return plainTextToLexical(value)
     }
 

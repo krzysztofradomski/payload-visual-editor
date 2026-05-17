@@ -5,17 +5,26 @@ import {
   DEFAULT_EDITABLE_FIELD_TYPES,
   type EditableFieldType,
   type PayloadVisualEditorConfig,
+  type VisualEditorCollectionConfig,
 } from './types.js'
 
-export type { EditableFieldType, PayloadVisualEditorConfig } from './types.js'
+export type {
+  EditableFieldType,
+  PayloadVisualEditorConfig,
+  VisualEditorCollectionConfig,
+} from './types.js'
 export { DEFAULT_EDITABLE_FIELD_TYPES } from './types.js'
 
 const pluginState: VisualEditorPluginState = {
-  collections: new Set(),
+  collections: new Map(),
   editableFieldTypes: DEFAULT_EDITABLE_FIELD_TYPES,
 }
 
-const VISUAL_EDITOR_BRIDGE_PATH = 'payload-visual-editor/client#VisualEditorBridge'
+function isCollectionEnabled(config: VisualEditorCollectionConfig | undefined): boolean {
+  return config === true || (typeof config === 'object' && config !== null)
+}
+
+const VISUAL_EDITOR_ADMIN_PATH = 'payload-visual-editor/client#VisualEditorAdmin'
 
 function enableCollectionVisualEditor(
   collection: NonNullable<Config['collections']>[number],
@@ -29,16 +38,16 @@ function enableCollectionVisualEditor(
   if (
     !existing.some(
       (component) =>
-        (typeof component === 'string' && component === VISUAL_EDITOR_BRIDGE_PATH) ||
+        (typeof component === 'string' && component === VISUAL_EDITOR_ADMIN_PATH) ||
         (typeof component === 'object' &&
           component !== null &&
           'path' in component &&
-          component.path === VISUAL_EDITOR_BRIDGE_PATH),
+          component.path === VISUAL_EDITOR_ADMIN_PATH),
     )
   ) {
     collection.admin.components.edit.beforeDocumentControls = [
       ...existing,
-      VISUAL_EDITOR_BRIDGE_PATH,
+      VISUAL_EDITOR_ADMIN_PATH,
     ]
   }
 }
@@ -50,10 +59,10 @@ export const payloadVisualEditor =
       pluginOptions.editableFieldTypes ?? DEFAULT_EDITABLE_FIELD_TYPES
 
     pluginState.editableFieldTypes = editableFieldTypes
-    pluginState.collections = new Set(
-      Object.entries(pluginOptions.collections ?? {})
-        .filter(([, enabled]) => enabled)
-        .map(([slug]) => slug),
+    pluginState.collections = new Map(
+      Object.entries(pluginOptions.collections ?? {}).flatMap(([slug, config]) =>
+        isCollectionEnabled(config) ? [[slug, config as VisualEditorCollectionConfig]] : [],
+      ),
     )
 
     const config: Config = {

@@ -1,25 +1,64 @@
 import type { FieldValueEntry } from './documentValues.js'
 
+const MIN_SEGMENT_LENGTH = 2
+
 export function normalizeText(value: string): string {
   return value.replace(/\s+/g, ' ').trim()
+}
+
+export function normalizeTextForMatch(value: string): string {
+  return normalizeText(value).normalize('NFC').toLocaleLowerCase()
 }
 
 const SKIP_ANCESTOR_SELECTOR =
   'script, style, noscript, svg, [data-payload-visual-editor-ui], .payload-visual-editor-toggle'
 
+export function buildMatchableSegments(entry: FieldValueEntry): string[] {
+  const segments = new Set<string>()
+  const full = normalizeText(entry.displayValue)
+
+  if (!full) {
+    return []
+  }
+
+  segments.add(full)
+
+  if (entry.type === 'richText' || entry.type === 'textarea') {
+    for (const paragraph of full.split(/\n{2,}|\n/)) {
+      const trimmed = normalizeText(paragraph)
+
+      if (trimmed.length >= MIN_SEGMENT_LENGTH) {
+        segments.add(trimmed)
+      }
+    }
+
+    for (const sentence of full.split(/(?<=[.!?])\s+/)) {
+      const trimmed = normalizeText(sentence)
+
+      if (trimmed.length >= MIN_SEGMENT_LENGTH) {
+        segments.add(trimmed)
+      }
+    }
+  }
+
+  return [...segments]
+}
+
 export function buildTextLookup(entries: FieldValueEntry[]) {
   const byText = new Map<string, FieldValueEntry[]>()
 
   for (const entry of entries) {
-    const key = normalizeText(entry.displayValue)
+    for (const segment of buildMatchableSegments(entry)) {
+      const key = normalizeTextForMatch(segment)
 
-    if (!key) {
-      continue
+      if (!key) {
+        continue
+      }
+
+      const existing = byText.get(key) ?? []
+      existing.push(entry)
+      byText.set(key, existing)
     }
-
-    const existing = byText.get(key) ?? []
-    existing.push(entry)
-    byText.set(key, existing)
   }
 
   return byText
@@ -35,7 +74,7 @@ function getOccurrenceIndex(element: HTMLElement, normalizedText: string): numbe
       return index
     }
 
-    if (normalizeText(node.innerText) === normalizedText) {
+    if (normalizeTextForMatch(node.innerText) === normalizedText) {
       index += 1
     }
 
@@ -43,6 +82,53 @@ function getOccurrenceIndex(element: HTMLElement, normalizedText: string): numbe
   }
 
   return 0
+}
+
+function pickCandidate(
+  element: HTMLElement,
+  normalized: string,
+  candidates: FieldValueEntry[],
+): FieldValueEntry {
+  if (candidates.length === 1) {
+    return candidates[0]!
+  }
+
+  const occurrence = getOccurrenceIndex(element, normalized)
+  return candidates[occurrence] ?? candidates[candidates.length - 1]!
+}
+
+function resolveLooseFieldForElement(
+  element: HTMLElement,
+  lookup: Map<string, FieldValueEntry[]>,
+  normalized: string,
+): FieldValueEntry | null {
+  let bestKey: string | null = null
+
+  for (const key of lookup.keys()) {
+    if (key.length < MIN_SEGMENT_LENGTH) {
+      continue
+    }
+
+    if (!normalized.includes(key)) {
+      continue
+    }
+
+    if (!bestKey || key.length > bestKey.length) {
+      bestKey = key
+    }
+  }
+
+  if (!bestKey) {
+    return null
+  }
+
+  const candidates = lookup.get(bestKey)
+
+  if (!candidates?.length) {
+    return null
+  }
+
+  return pickCandidate(element, bestKey, candidates)
 }
 
 export function resolveFieldForElement(
@@ -53,7 +139,7 @@ export function resolveFieldForElement(
     return null
   }
 
-  const normalized = normalizeText(element.innerText)
+  const normalized = normalizeTextForMatch(element.innerText)
 
   if (!normalized) {
     return null
@@ -61,16 +147,11 @@ export function resolveFieldForElement(
 
   const candidates = lookup.get(normalized)
 
-  if (!candidates?.length) {
-    return null
+  if (candidates?.length) {
+    return pickCandidate(element, normalized, candidates)
   }
 
-  if (candidates.length === 1) {
-    return candidates[0]!
-  }
-
-  const occurrence = getOccurrenceIndex(element, normalized)
-  return candidates[occurrence] ?? candidates[candidates.length - 1]!
+  return resolveLooseFieldForElement(element, lookup, normalized)
 }
 
 export function findEditableElementFromTarget(
@@ -88,6 +169,8 @@ export function findEditableElementFromTarget(
   }
 
   let element = node instanceof HTMLElement ? node : null
+  let bestMatch: { element: HTMLElement; field: FieldValueEntry } | null = null
+  let bestLength = Number.POSITIVE_INFINITY
 
   while (element && element !== document.body) {
     if (element.closest(SKIP_ANCESTOR_SELECTOR)) {
@@ -97,11 +180,16 @@ export function findEditableElementFromTarget(
     const field = resolveFieldForElement(element, lookup)
 
     if (field) {
-      return { element, field }
+      const length = normalizeText(element.innerText).length
+
+      if (length < bestLength) {
+        bestLength = length
+        bestMatch = { element, field }
+      }
     }
 
     element = element.parentElement
   }
 
-  return null
+  return bestMatch
 }
