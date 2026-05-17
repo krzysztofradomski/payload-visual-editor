@@ -1,6 +1,20 @@
 # payload-visual-editor
 
-Inline visual editing for [Payload CMS](https://payloadcms.com) live preview. Edit text directly in the preview iframe; changes sync back to the admin document form and save as a draft.
+Inline visual editing for [Payload CMS](https://payloadcms.com) live preview.
+
+![Payload admin preview toolbar closed](media/toolbar-menu-closed.png)
+![Payload admin preview toolbar opened](media/toolbar-menu-opened.png) Edit text directly in the preview iframe; changes sync back to the admin document form and save as a draft.
+
+<details>
+<summary><b>Demo video</b> — click to expand (~9 MB, loads on demand)</summary>
+<br>
+
+<video controls preload="none" poster="media/video-poster.png" width="720">
+  <source src="media/payload-visual-editor.mov" type="video/quicktime">
+  <a href="media/payload-visual-editor.mov">Play or download demo</a>
+</video>
+
+</details>
 
 ## Features
 
