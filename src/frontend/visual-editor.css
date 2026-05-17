@@ -1,0 +1,40 @@
+.payload-visual-editor-toggle {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2147483646;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font:
+    600 13px/1.2 system-ui,
+    -apple-system,
+    sans-serif;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.payload-visual-editor-toggle[aria-pressed='true'] {
+  background: #0070f3;
+}
+
+.payload-visual-editor-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.payload-visual-editor-target {
+  outline: 2px dashed #0070f3;
+  outline-offset: 3px;
+  cursor: text;
+}
+
+.payload-visual-editor-target:focus {
+  outline: 2px solid #0070f3;
+}

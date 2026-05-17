@@ -38,7 +38,19 @@ const buildConfigWithMemoryDB = async () => {
     collections: [
       {
         slug: 'posts',
-        fields: [],
+        admin: {
+          livePreview: {
+            url: ({ data }) => `/posts/${data?.slug}?payloadLivePreview=true`,
+          },
+          useAsTitle: 'title',
+        },
+        fields: [
+          { name: 'title', type: 'text', required: true },
+          { name: 'slug', type: 'text', required: true },
+          { name: 'excerpt', type: 'textarea' },
+          { name: 'views', type: 'number', defaultValue: 0 },
+          { name: 'content', type: 'richText' },
+        ],
       },
       {
         slug: 'media',

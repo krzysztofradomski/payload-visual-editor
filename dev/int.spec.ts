@@ -1,52 +1,41 @@
-import type { Payload } from 'payload'
-
 import config from '@payload-config'
-import { createPayloadRequest, getPayload } from 'payload'
-import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { getPayload } from 'payload'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { customEndpointHandler } from '../src/endpoints/customEndpointHandler.js'
+import { collectEditableFields } from '../src/lib/collectEditableFields.js'
+import { DEFAULT_EDITABLE_FIELD_TYPES } from '../src/types.js'
 
-let payload: Payload
+let payload: Awaited<ReturnType<typeof getPayload>>
 
-afterAll(async () => {
-  await payload.destroy()
-})
-
-beforeAll(async () => {
-  payload = await getPayload({ config })
-})
-
-describe('Plugin integration tests', () => {
-  test('should query custom endpoint added by plugin', async () => {
-    const request = new Request('http://localhost:3000/api/my-plugin-endpoint', {
-      method: 'GET',
-    })
-
-    const payloadRequest = await createPayloadRequest({ config, request })
-    const response = await customEndpointHandler(payloadRequest)
-    expect(response.status).toBe(200)
-
-    const data = await response.json()
-    expect(data).toMatchObject({
-      message: 'Hello from custom endpoint',
-    })
+describe('payload-visual-editor', () => {
+  beforeAll(async () => {
+    payload = await getPayload({ config })
   })
 
-  test('can create post with custom text field added by plugin', async () => {
-    const post = await payload.create({
-      collection: 'posts',
-      data: {
-        addedByPlugin: 'added by plugin',
-      },
-    })
-    expect(post.addedByPlugin).toBe('added by plugin')
+  afterAll(async () => {
+    await payload.db.destroy()
   })
 
-  test('plugin creates and seeds plugin-collection', async () => {
-    expect(payload.collections['plugin-collection']).toBeDefined()
+  it('collects editable fields from a collection schema', () => {
+    const posts = payload.collections.posts.config
+    const fields = collectEditableFields(posts.fields, DEFAULT_EDITABLE_FIELD_TYPES)
 
-    const { docs } = await payload.find({ collection: 'plugin-collection' })
+    expect(fields).toEqual(
+      expect.arrayContaining([
+        { path: 'title', type: 'text' },
+        { path: 'excerpt', type: 'textarea' },
+        { path: 'views', type: 'number' },
+        { path: 'content', type: 'richText' },
+      ]),
+    )
+  })
 
-    expect(docs).toHaveLength(1)
+  it('registers the visual editor fields endpoint on enabled collections', async () => {
+    const endpoint = payload.config.endpoints?.find(
+      (item) => item.path === '/visual-editor/fields',
+    )
+
+    expect(endpoint).toBeDefined()
+    expect(endpoint?.method).toBe('get')
   })
 })

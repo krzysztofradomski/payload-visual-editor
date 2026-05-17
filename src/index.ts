@@ -1,112 +1,83 @@
-import type { CollectionSlug, Config } from 'payload'
+import type { Config, Plugin } from 'payload'
 
-import { customEndpointHandler } from './endpoints/customEndpointHandler.js'
+import { createFieldsEndpoint, type VisualEditorPluginState } from './endpoints/fieldsHandler.js'
+import {
+  DEFAULT_EDITABLE_FIELD_TYPES,
+  type EditableFieldType,
+  type PayloadVisualEditorConfig,
+} from './types.js'
 
-export type PayloadVisualEditorConfig = {
-  /**
-   * List of collections to add a custom field
-   */
-  collections?: Partial<Record<CollectionSlug, true>>
-  disabled?: boolean
+export type { EditableFieldType, PayloadVisualEditorConfig } from './types.js'
+export { DEFAULT_EDITABLE_FIELD_TYPES } from './types.js'
+
+const pluginState: VisualEditorPluginState = {
+  collections: new Set(),
+  editableFieldTypes: DEFAULT_EDITABLE_FIELD_TYPES,
+}
+
+const VISUAL_EDITOR_BRIDGE_PATH = 'payload-visual-editor/client#VisualEditorBridge'
+
+function enableCollectionVisualEditor(
+  collection: NonNullable<Config['collections']>[number],
+): void {
+  collection.admin = collection.admin || {}
+  collection.admin.components = collection.admin.components || {}
+  collection.admin.components.edit = collection.admin.components.edit || {}
+
+  const existing = collection.admin.components.edit.beforeDocumentControls || []
+
+  if (
+    !existing.some(
+      (component) =>
+        (typeof component === 'string' && component === VISUAL_EDITOR_BRIDGE_PATH) ||
+        (typeof component === 'object' &&
+          component !== null &&
+          'path' in component &&
+          component.path === VISUAL_EDITOR_BRIDGE_PATH),
+    )
+  ) {
+    collection.admin.components.edit.beforeDocumentControls = [
+      ...existing,
+      VISUAL_EDITOR_BRIDGE_PATH,
+    ]
+  }
 }
 
 export const payloadVisualEditor =
-  (pluginOptions: PayloadVisualEditorConfig) =>
-  (config: Config): Config => {
-    if (!config.collections) {
-      config.collections = []
+  (pluginOptions: PayloadVisualEditorConfig): Plugin =>
+  (incomingConfig: Config): Config => {
+    const editableFieldTypes: readonly EditableFieldType[] =
+      pluginOptions.editableFieldTypes ?? DEFAULT_EDITABLE_FIELD_TYPES
+
+    pluginState.editableFieldTypes = editableFieldTypes
+    pluginState.collections = new Set(
+      Object.entries(pluginOptions.collections ?? {})
+        .filter(([, enabled]) => enabled)
+        .map(([slug]) => slug),
+    )
+
+    const config: Config = {
+      ...incomingConfig,
+      collections: [...(incomingConfig.collections || [])],
+      endpoints: [...(incomingConfig.endpoints || [])],
     }
 
-    config.collections.push({
-      slug: 'plugin-collection',
-      fields: [
-        {
-          name: 'id',
-          type: 'text',
-        },
-      ],
-    })
-
-    if (pluginOptions.collections) {
-      for (const collectionSlug in pluginOptions.collections) {
-        const collection = config.collections.find(
-          (collection) => collection.slug === collectionSlug,
-        )
-
-        if (collection) {
-          collection.fields.push({
-            name: 'addedByPlugin',
-            type: 'text',
-            admin: {
-              position: 'sidebar',
-            },
-          })
+    if (config.collections) {
+      for (const collection of config.collections) {
+        if (pluginState.collections.has(collection.slug)) {
+          enableCollectionVisualEditor(collection)
         }
       }
-    }
-
-    /**
-     * If the plugin is disabled, we still want to keep added collections/fields so the database schema is consistent which is important for migrations.
-     * If your plugin heavily modifies the database schema, you may want to remove this property.
-     */
-    if (pluginOptions.disabled) {
-      return config
     }
 
     if (!config.endpoints) {
       config.endpoints = []
     }
 
-    if (!config.admin) {
-      config.admin = {}
-    }
+    config.endpoints.push(createFieldsEndpoint(pluginState))
 
-    if (!config.admin.components) {
-      config.admin.components = {}
-    }
-
-    if (!config.admin.components.beforeDashboard) {
-      config.admin.components.beforeDashboard = []
-    }
-
-    config.admin.components.beforeDashboard.push(
-      `payload-visual-editor/client#BeforeDashboardClient`,
-    )
-    config.admin.components.beforeDashboard.push(
-      `payload-visual-editor/rsc#BeforeDashboardServer`,
-    )
-
-    config.endpoints.push({
-      handler: customEndpointHandler,
-      method: 'get',
-      path: '/my-plugin-endpoint',
-    })
-
-    const incomingOnInit = config.onInit
-
-    config.onInit = async (payload) => {
-      // Ensure we are executing any existing onInit functions before running our own.
-      if (incomingOnInit) {
-        await incomingOnInit(payload)
-      }
-
-      const { totalDocs } = await payload.count({
-        collection: 'plugin-collection',
-        where: {
-          id: {
-            equals: 'seeded-by-plugin',
-          },
-        },
-      })
-
-      if (totalDocs === 0) {
-        await payload.create({
-          collection: 'plugin-collection',
-          data: {
-            id: 'seeded-by-plugin',
-          },
-        })
-      }
+    if (pluginOptions.disabled) {
+      return config
     }
 
     return config
