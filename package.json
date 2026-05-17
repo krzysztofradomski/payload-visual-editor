@@ -1,5 +1,5 @@
 {
-  "name": "payload-visual-editor",
+  "name": "@krzysztofradomski/payload-visual-editor",
   "version": "1.0.0",
   "description": "Inline visual editing for Payload CMS live preview (text fields)",
   "license": "MIT",

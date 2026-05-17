@@ -18,10 +18,10 @@ Inline visual editing for [Payload CMS](https://payloadcms.com) live preview. Ed
 - Live preview configured on the collection
 - `VisualEditorListener` mounted in your frontend root layout
 
-## Installation
+## Installation - not yet published!
 
 ```bash
-pnpm add payload-visual-editor
+pnpm add @krzysztofradomski/payload-visual-editor
 ```
 
 When developing against a local checkout, link with `file:` and run `pnpm build` in the plugin package after changes.
@@ -58,11 +58,11 @@ export default buildConfig({
 
 ### Collection options
 
-| Value | Description |
-| --- | --- |
-| `true` | All fields matching `editableFieldTypes` are editable |
-| `{ fields?: string[] }` | Only these dot-paths (e.g. `meta.title`) |
-| `{ excludeFields?: string[] }` | Remove paths from the editable set (e.g. `slug`) |
+| Value                          | Description                                           |
+| ------------------------------ | ----------------------------------------------------- |
+| `true`                         | All fields matching `editableFieldTypes` are editable |
+| `{ fields?: string[] }`        | Only these dot-paths (e.g. `meta.title`)              |
+| `{ excludeFields?: string[] }` | Remove paths from the editable set (e.g. `slug`)      |
 
 The plugin registers an **Edit** button via `beforeDocumentControls` on enabled collections. No manual admin component wiring is required.
 
@@ -145,11 +145,11 @@ Returns `400` if the collection is not enabled for visual editing.
 
 ## Exports
 
-| Import | Description |
-| --- | --- |
-| `payload-visual-editor` | Plugin (`payloadVisualEditor`) and types |
+| Import                         | Description                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| `payload-visual-editor`        | Plugin (`payloadVisualEditor`) and types                                       |
 | `payload-visual-editor/client` | `VisualEditorListener`, `VisualEditorAdmin` (used automatically by the plugin) |
-| `payload-visual-editor/rsc` | Re-exports for RSC-compatible setups |
+| `payload-visual-editor/rsc`    | Re-exports for RSC-compatible setups                                           |
 
 ## Development
 
