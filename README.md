@@ -43,7 +43,7 @@ When developing against a local checkout, link with `file:` and run `pnpm build`
 ## Plugin configuration
 
 ```ts
-import { payloadVisualEditor } from 'payload-visual-editor'
+import { payloadVisualEditor } from '@krzysztofradomski/payload-visual-editor'
 
 export default buildConfig({
   plugins: [
