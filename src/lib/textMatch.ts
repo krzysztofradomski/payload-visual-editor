@@ -158,6 +158,19 @@ export function findEditableElementFromTarget(
   target: EventTarget | null,
   lookup: Map<string, FieldValueEntry[]>,
 ): { element: HTMLElement; field: FieldValueEntry } | null {
+  const context = findFieldContextFromTarget(target, lookup)
+
+  if (!context) {
+    return null
+  }
+
+  return { element: context.blockElement, field: context.field }
+}
+
+export function findFieldContextFromTarget(
+  target: EventTarget | null,
+  lookup: Map<string, FieldValueEntry[]>,
+): { blockElement: HTMLElement; field: FieldValueEntry } | null {
   if (!target || !(target instanceof Node)) {
     return null
   }
@@ -169,7 +182,7 @@ export function findEditableElementFromTarget(
   }
 
   let element = node instanceof HTMLElement ? node : null
-  let bestMatch: { element: HTMLElement; field: FieldValueEntry } | null = null
+  let bestMatch: { blockElement: HTMLElement; field: FieldValueEntry } | null = null
   let bestLength = Number.POSITIVE_INFINITY
 
   while (element && element !== document.body) {
@@ -184,7 +197,7 @@ export function findEditableElementFromTarget(
 
       if (length < bestLength) {
         bestLength = length
-        bestMatch = { element, field }
+        bestMatch = { blockElement: element, field }
       }
     }
 
@@ -192,4 +205,148 @@ export function findEditableElementFromTarget(
   }
 
   return bestMatch
+}
+
+const WORD_CHAR_PATTERN = /[\p{L}\p{N}'’-]/u
+
+export function caretRangeFromPoint(x: number, y: number): Range | null {
+  if (typeof document.caretRangeFromPoint === 'function') {
+    return document.caretRangeFromPoint(x, y)
+  }
+
+  const position = document.caretPositionFromPoint?.(x, y)
+
+  if (!position) {
+    return null
+  }
+
+  const range = document.createRange()
+  range.setStart(position.offsetNode, position.offset)
+  range.collapse(true)
+
+  return range
+}
+
+export function expandRangeToWord(range: Range): Range | null {
+  const { startContainer, startOffset } = range
+
+  if (startContainer.nodeType !== Node.TEXT_NODE) {
+    return null
+  }
+
+  const text = startContainer.textContent ?? ''
+  let start = startOffset
+  let end = startOffset
+
+  while (start > 0 && WORD_CHAR_PATTERN.test(text[start - 1] ?? '')) {
+    start -= 1
+  }
+
+  while (end < text.length && WORD_CHAR_PATTERN.test(text[end] ?? '')) {
+    end += 1
+  }
+
+  if (start === end) {
+    return null
+  }
+
+  const wordRange = document.createRange()
+  wordRange.setStart(startContainer, start)
+  wordRange.setEnd(startContainer, end)
+
+  return wordRange
+}
+
+export function getWordRangeAtPoint(x: number, y: number): Range | null {
+  const caret = caretRangeFromPoint(x, y)
+
+  if (!caret) {
+    return null
+  }
+
+  return expandRangeToWord(caret)
+}
+
+export function wrapRangeWithSpan(range: Range, className: string, attributes?: Record<string, string>) {
+  const span = document.createElement('span')
+  span.className = className
+
+  if (attributes) {
+    for (const [name, value] of Object.entries(attributes)) {
+      span.setAttribute(name, value)
+    }
+  }
+
+  const fragment = range.extractContents()
+  span.appendChild(fragment)
+  range.insertNode(span)
+
+  return span
+}
+
+export function unwrapSpan(span: HTMLElement) {
+  const parent = span.parentNode
+
+  if (!parent) {
+    return
+  }
+
+  while (span.firstChild) {
+    parent.insertBefore(span.firstChild, span)
+  }
+
+  parent.removeChild(span)
+  parent.normalize()
+}
+
+export type WordTarget = {
+  blockElement: HTMLElement
+  field: FieldValueEntry
+  wordRange: Range
+  wordText: string
+}
+
+export function findWordTargetAtPoint(
+  target: EventTarget | null,
+  clientX: number,
+  clientY: number,
+  lookup: Map<string, FieldValueEntry[]>,
+): WordTarget | null {
+  const context = findFieldContextFromTarget(target, lookup)
+
+  if (!context) {
+    return null
+  }
+
+  if (context.field.type === 'number') {
+    return null
+  }
+
+  const wordRange = getWordRangeAtPoint(clientX, clientY)
+
+  if (!wordRange) {
+    return null
+  }
+
+  const ancestor = wordRange.commonAncestorContainer
+
+  if (
+    ancestor !== context.blockElement &&
+    !context.blockElement.contains(ancestor)
+  ) {
+    return null
+  }
+
+  const wordText = normalizeText(wordRange.toString())
+
+  if (!wordText) {
+    return null
+  }
+
+  return {
+    blockElement: context.blockElement,
+    field: context.field,
+    wordRange,
+    wordText,
+  }
 }

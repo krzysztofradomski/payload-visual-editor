@@ -18,7 +18,9 @@ import {
 import type { EditableFieldDescriptor } from '../types.js'
 import { useVisualEditorMode } from './useVisualEditorMode.js'
 
-const MIN_MATCH_LENGTH = 2
+const MIN_FIELD_LENGTH = 2
+const HOVER_CLASS = 'payload-visual-editor-hover'
+const EDITING_CLASS = 'payload-visual-editor-target'
 
 function readValueForField(element: HTMLElement, field: FieldValueEntry): string | number {
   const text = normalizeText(element.innerText)
@@ -42,6 +44,11 @@ function applyFieldDescriptors(
   lookupRef.current = buildTextLookup(entries)
 }
 
+function deactivateElement(element: HTMLElement) {
+  element.removeAttribute('contenteditable')
+  element.classList.remove(EDITING_CLASS)
+}
+
 export function VisualEditorListener() {
   const isLivePreview = useVisualEditorMode()
   const [editMode, setEditMode] = useState(false)
@@ -54,6 +61,7 @@ export function VisualEditorListener() {
   const activeFieldRef = useRef<FieldValueEntry | null>(null)
   const originalTextRef = useRef<string>('')
   const commitActiveEditRef = useRef<(() => void) | null>(null)
+  const hoverBlockRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     if (!isLivePreview) {
@@ -67,6 +75,7 @@ export function VisualEditorListener() {
     const style = document.createElement('style')
     style.id = 'payload-visual-editor-styles'
     style.textContent = `
+.payload-visual-editor-hover { outline: 1px dashed #0070f3; outline-offset: 3px; cursor: text; }
 .payload-visual-editor-target { outline: 2px dashed #0070f3; outline-offset: 3px; cursor: text; }
 .payload-visual-editor-target:focus { outline: 2px solid #0070f3; }
 `
@@ -172,21 +181,19 @@ export function VisualEditorListener() {
   useEffect(() => {
     if (!isLivePreview || !editMode) {
       commitActiveEditRef.current = null
-      activeTargetRef.current?.classList.remove('payload-visual-editor-target')
+      if (activeTargetRef.current) {
+        deactivateElement(activeTargetRef.current)
+      }
       activeTargetRef.current = null
+      activeFieldRef.current = null
       return
     }
 
-    const clearActiveTarget = () => {
-      const active = activeTargetRef.current
-
-      if (active && active !== document.activeElement) {
-        active.removeAttribute('contenteditable')
-        active.classList.remove('payload-visual-editor-target')
+    const clearHoverBlock = () => {
+      if (hoverBlockRef.current) {
+        hoverBlockRef.current.classList.remove(HOVER_CLASS)
+        hoverBlockRef.current = null
       }
-
-      activeTargetRef.current = null
-      activeFieldRef.current = null
     }
 
     const commitChange = (element: HTMLElement, field: FieldValueEntry) => {
@@ -201,7 +208,6 @@ export function VisualEditorListener() {
 
       target?.postMessage(
         {
-          originalSegment: previous,
           path: field.path,
           saveDraft: true,
           type: VISUAL_EDITOR_UPDATE_TYPE,
@@ -220,22 +226,74 @@ export function VisualEditorListener() {
       }
 
       commitChange(active, field)
-      active.removeAttribute('contenteditable')
-      active.classList.remove('payload-visual-editor-target')
+      deactivateElement(active)
       activeTargetRef.current = null
       activeFieldRef.current = null
     }
 
     commitActiveEditRef.current = commitActiveEdit
 
+    const activateBlock = (element: HTMLElement, field: FieldValueEntry) => {
+      if (activeTargetRef.current && activeTargetRef.current !== element) {
+        commitActiveEdit()
+      }
+
+      clearHoverBlock()
+      element.setAttribute('contenteditable', 'true')
+      element.classList.add(EDITING_CLASS)
+      element.classList.remove(HOVER_CLASS)
+      activeTargetRef.current = element
+      activeFieldRef.current = field
+      originalTextRef.current = normalizeText(element.innerText)
+    }
+
     const onMouseOver = (event: MouseEvent) => {
-      if (document.activeElement?.getAttribute('contenteditable') === 'true') {
+      if (activeTargetRef.current?.contains(event.target as Node)) {
         return
       }
 
       const match = findEditableElementFromTarget(event.target, lookupRef.current)
 
-      if (!match || normalizeText(match.field.displayValue).length < MIN_MATCH_LENGTH) {
+      if (!match || normalizeText(match.field.displayValue).length < MIN_FIELD_LENGTH) {
+        clearHoverBlock()
+        return
+      }
+
+      if (hoverBlockRef.current === match.element) {
+        return
+      }
+
+      clearHoverBlock()
+      match.element.setAttribute('contenteditable', 'true')
+      match.element.classList.add(HOVER_CLASS)
+      hoverBlockRef.current = match.element
+    }
+
+    const onMouseOut = (event: MouseEvent) => {
+      const hover = hoverBlockRef.current
+
+      if (!hover) {
+        return
+      }
+
+      const related = event.relatedTarget
+
+      if (related instanceof Node && hover.contains(related)) {
+        return
+      }
+
+      if (hover !== activeTargetRef.current) {
+        hover.removeAttribute('contenteditable')
+      }
+
+      hover.classList.remove(HOVER_CLASS)
+      hoverBlockRef.current = null
+    }
+
+    const onMouseDown = (event: MouseEvent) => {
+      const match = findEditableElementFromTarget(event.target, lookupRef.current)
+
+      if (!match || normalizeText(match.field.displayValue).length < MIN_FIELD_LENGTH) {
         return
       }
 
@@ -243,16 +301,27 @@ export function VisualEditorListener() {
         return
       }
 
-      clearActiveTarget()
-      activeTargetRef.current = match.element
-      activeFieldRef.current = match.field
-      match.element.classList.add('payload-visual-editor-target')
+      activateBlock(match.element, match.field)
     }
 
-    const onMouseOut = (event: MouseEvent) => {
+    const onFocusIn = (event: FocusEvent) => {
+      const match = findEditableElementFromTarget(event.target, lookupRef.current)
+
+      if (!match || normalizeText(match.field.displayValue).length < MIN_FIELD_LENGTH) {
+        return
+      }
+
+      if (activeTargetRef.current === match.element) {
+        return
+      }
+
+      activateBlock(match.element, match.field)
+    }
+
+    const onFocusOut = (event: FocusEvent) => {
       const active = activeTargetRef.current
 
-      if (!active || active === document.activeElement) {
+      if (!active || event.target !== active) {
         return
       }
 
@@ -262,52 +331,7 @@ export function VisualEditorListener() {
         return
       }
 
-      clearActiveTarget()
-    }
-
-    const onClick = (event: MouseEvent) => {
-      const match = findEditableElementFromTarget(event.target, lookupRef.current)
-
-      if (!match) {
-        return
-      }
-
-      event.preventDefault()
-
-      const { element, field } = match
-      activeTargetRef.current = element
-      activeFieldRef.current = field
-      originalTextRef.current = normalizeText(element.innerText)
-
-      element.setAttribute('contenteditable', 'true')
-      element.classList.add('payload-visual-editor-target')
-      element.focus()
-
-      const selection = window.getSelection()
-      const range = document.createRange()
-      range.selectNodeContents(element)
-      selection?.removeAllRanges()
-      selection?.addRange(range)
-    }
-
-    const onBlur = (event: FocusEvent) => {
-      const target = event.target
-
-      if (!(target instanceof HTMLElement)) {
-        return
-      }
-
-      const field = activeFieldRef.current
-
-      if (!field) {
-        return
-      }
-
-      commitChange(target, field)
-      target.removeAttribute('contenteditable')
-      target.classList.remove('payload-visual-editor-target')
-      activeTargetRef.current = null
-      activeFieldRef.current = null
+      commitActiveEdit()
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -327,17 +351,20 @@ export function VisualEditorListener() {
 
     document.addEventListener('mouseover', onMouseOver, true)
     document.addEventListener('mouseout', onMouseOut, true)
-    document.addEventListener('click', onClick, true)
-    document.addEventListener('blur', onBlur, true)
+    document.addEventListener('mousedown', onMouseDown, true)
+    document.addEventListener('focusin', onFocusIn, true)
+    document.addEventListener('focusout', onFocusOut, true)
     document.addEventListener('keydown', onKeyDown, true)
 
     return () => {
       commitActiveEditRef.current = null
       document.removeEventListener('mouseover', onMouseOver, true)
       document.removeEventListener('mouseout', onMouseOut, true)
-      document.removeEventListener('click', onClick, true)
-      document.removeEventListener('blur', onBlur, true)
+      document.removeEventListener('mousedown', onMouseDown, true)
+      document.removeEventListener('focusin', onFocusIn, true)
+      document.removeEventListener('focusout', onFocusOut, true)
       document.removeEventListener('keydown', onKeyDown, true)
+      clearHoverBlock()
       commitActiveEdit()
     }
   }, [editMode, isLivePreview])

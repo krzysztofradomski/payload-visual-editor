@@ -62,7 +62,7 @@ export function plainTextToLexical(text: string) {
   }
 }
 
-function replaceFirstInsensitive(source: string, search: string, replacement: string): string {
+export function replaceFirstInsensitive(source: string, search: string, replacement: string): string {
   const index = source.toLocaleLowerCase().indexOf(search.toLocaleLowerCase())
 
   if (index === -1) {
@@ -81,6 +81,20 @@ export function coerceVisualEditorValue(
   if (fieldType === 'number') {
     const parsed = typeof value === 'number' ? value : Number(value)
     return Number.isNaN(parsed) ? value : parsed
+  }
+
+  if (fieldType === 'text' || fieldType === 'textarea') {
+    if (typeof value !== 'string') {
+      return value
+    }
+
+    const segment = originalSegment?.trim()
+
+    if (segment && typeof currentValue === 'string') {
+      return replaceFirstInsensitive(currentValue, segment, value)
+    }
+
+    return value
   }
 
   if (fieldType === 'richText') {
