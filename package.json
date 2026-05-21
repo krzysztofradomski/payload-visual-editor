@@ -42,7 +42,10 @@
     "lint:fix": "eslint ./src --fix",
     "test": "pnpm test:int && pnpm test:e2e",
     "test:e2e": "playwright test",
-    "test:int": "vitest"
+    "test:int": "vitest",
+    "check": "tsc --noEmit && eslint src && vitest run",
+    "typecheck": "tsc --noEmit",
+    "update": "pnpm store prune && pnpm up --latest --interactive"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -120,7 +123,8 @@
   },
   "registry": "https://registry.npmjs.org/",
   "dependencies": {
-    "@payloadcms/live-preview": "3.84.1"
+    "@payloadcms/live-preview": "3.84.1",
+    "payload-visual-editor": "link:."
   },
   "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319"
 }

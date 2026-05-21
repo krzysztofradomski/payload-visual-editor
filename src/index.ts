@@ -24,7 +24,8 @@ function isCollectionEnabled(config: VisualEditorCollectionConfig | undefined): 
   return config === true || (typeof config === 'object' && config !== null)
 }
 
-const VISUAL_EDITOR_ADMIN_PATH = 'payload-visual-editor/client#VisualEditorAdmin'
+/** Import map path for the admin Edit/Done control (live preview toolbar). */
+export const VISUAL_EDITOR_ADMIN_PATH = 'payload-visual-editor/client#VisualEditorAdmin' as const
 
 function enableCollectionVisualEditor(
   collection: NonNullable<Config['collections']>[number],

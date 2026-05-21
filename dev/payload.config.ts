@@ -7,6 +7,7 @@ import { payloadVisualEditor } from 'payload-visual-editor'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
+import { Posts } from './collections/posts.js'
 import { testEmailAdapter } from './helpers/testEmailAdapter.js'
 import { seed } from './seed.js'
 
@@ -18,7 +19,7 @@ if (!process.env.ROOT_DIR) {
 }
 
 const buildConfigWithMemoryDB = async () => {
-  if (process.env.NODE_ENV === 'test') {
+  if (!process.env.DATABASE_URL?.trim()) {
     const memoryDB = await MongoMemoryReplSet.create({
       replSet: {
         count: 3,
@@ -35,23 +36,17 @@ const buildConfigWithMemoryDB = async () => {
         baseDir: path.resolve(dirname),
       },
     },
+    serverURL: process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000',
     collections: [
       {
-        slug: 'posts',
+        slug: 'users',
+        auth: true,
         admin: {
-          livePreview: {
-            url: ({ data }) => `/posts/${data?.slug}?payloadLivePreview=true`,
-          },
-          useAsTitle: 'title',
+          useAsTitle: 'email',
         },
-        fields: [
-          { name: 'title', type: 'text', required: true },
-          { name: 'slug', type: 'text', required: true },
-          { name: 'excerpt', type: 'textarea' },
-          { name: 'views', type: 'number', defaultValue: 0 },
-          { name: 'content', type: 'richText' },
-        ],
+        fields: [],
       },
+      Posts,
       {
         slug: 'media',
         fields: [],

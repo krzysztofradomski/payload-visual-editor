@@ -1,0 +1,94 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.5;
+  color: #111;
+  background: #fafafa;
+}
+
+.site-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e5e5;
+  background: #fff;
+}
+
+.site-header a {
+  color: #0070f3;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.site-main {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.post-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.post-list a {
+  display: block;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+}
+
+.post-list a:hover {
+  border-color: #0070f3;
+}
+
+.post-list h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
+}
+
+.post-list p {
+  margin: 0;
+  color: #555;
+  font-size: 0.9375rem;
+}
+
+.post-article h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.post-meta {
+  margin: 0 0 1.5rem;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.post-excerpt {
+  font-size: 1.125rem;
+  color: #333;
+  margin: 0 0 1.5rem;
+}
+
+.post-content {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+.post-content p {
+  margin: 0 0 1rem;
+}
