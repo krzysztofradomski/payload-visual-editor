@@ -18,6 +18,7 @@ export default defineConfig(() => {
     ],
     test: {
       environment: 'node',
+      environmentMatchGlobs: [['**/*.dom.spec.ts', 'happy-dom']],
       exclude: [
         '**/node_modules/**',
         '**/.claude/**',

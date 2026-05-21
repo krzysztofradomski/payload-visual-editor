@@ -41,14 +41,13 @@ const buildConfigWithMemoryDB = async () => {
         baseDir: path.resolve(dirname),
       },
     },
-    serverURL: process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000',
     collections: [
       {
         slug: 'users',
-        auth: true,
         admin: {
           useAsTitle: 'email',
         },
+        auth: true,
         fields: [],
       },
       Posts,
@@ -77,6 +76,8 @@ const buildConfigWithMemoryDB = async () => {
       }),
     ],
     secret: process.env.PAYLOAD_SECRET || 'test-secret_key',
+    serverURL: process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000',
+
     sharp,
     typescript: {
       outputFile: path.resolve(dirname, 'payload-types.ts'),
