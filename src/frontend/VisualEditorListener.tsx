@@ -1,9 +1,13 @@
 'use client'
 
 import { ready, subscribe, unsubscribe } from '@payloadcms/live-preview'
-import { useEffect, useRef, useState, type MutableRefObject } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-import { buildFieldValueEntries, type FieldValueEntry } from '../lib/documentValues.js'
+import {
+  buildFieldValueEntries,
+  setValueAtPath,
+  type FieldValueEntry,
+} from '../lib/documentValues.js'
 import {
   isVisualEditorSetModeMessage,
   isVisualEditorSyncFieldsMessage,
@@ -13,40 +17,71 @@ import {
   buildTextLookup,
   findEditableElementFromTarget,
   normalizeText,
-  normalizeTextForMatch,
 } from '../lib/textMatch.js'
 import type { EditableFieldDescriptor } from '../types.js'
 import { useVisualEditorMode } from './useVisualEditorMode.js'
 
 const MIN_FIELD_LENGTH = 2
 const HOVER_CLASS = 'payload-visual-editor-hover'
-const EDITING_CLASS = 'payload-visual-editor-target'
+const EDITING_CLASS = 'payload-visual-editor-editing'
+const FIELD_ATTR = 'data-ve-path'
 
-function readValueForField(element: HTMLElement, field: FieldValueEntry): string | number {
-  const text = normalizeText(element.innerText)
-
-  if (field.type === 'number') {
-    const parsed = Number(text)
-    return Number.isNaN(parsed) ? text : parsed
+function injectStyles() {
+  if (document.getElementById('payload-visual-editor-styles')) {
+    return
   }
 
-  return text
+  const style = document.createElement('style')
+  style.id = 'payload-visual-editor-styles'
+  style.textContent = `
+[${FIELD_ATTR}] { transition: outline 0.15s ease; }
+.${HOVER_CLASS} { outline: 2px dashed rgba(0,112,243,0.5); outline-offset: 3px; cursor: text; border-radius: 2px; }
+.${EDITING_CLASS} [${FIELD_ATTR}] { cursor: text; }
+.${EDITING_CLASS} [${FIELD_ATTR}]:focus-within,
+.${EDITING_CLASS} [${FIELD_ATTR}].ve-active { outline: 2px solid #0070f3; outline-offset: 3px; border-radius: 2px; }
+`
+  document.head.appendChild(style)
 }
 
-function applyFieldDescriptors(
-  fields: EditableFieldDescriptor[],
-  documentData: Record<string, unknown>,
-  fieldDescriptorsRef: MutableRefObject<EditableFieldDescriptor[]>,
-  lookupRef: MutableRefObject<ReturnType<typeof buildTextLookup>>,
-) {
-  fieldDescriptorsRef.current = fields
-  const entries = buildFieldValueEntries(documentData, fields)
-  lookupRef.current = buildTextLookup(entries)
+/**
+ * Walk the container and stamp every element that matches a known field with
+ * `data-ve-path`. Returns a map from path → element for quick access.
+ */
+function stampFieldElements(
+  container: HTMLElement,
+  lookup: Map<string, FieldValueEntry[]>,
+): Map<string, HTMLElement> {
+  const stamped = new Map<string, HTMLElement>()
+
+  // Clear previous stamps
+  for (const el of container.querySelectorAll(`[${FIELD_ATTR}]`)) {
+    el.removeAttribute(FIELD_ATTR)
+  }
+
+  // Walk every element inside the container
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT)
+  let node = walker.nextNode() as HTMLElement | null
+
+  while (node) {
+    const match = findEditableElementFromTarget(node, lookup)
+
+    if (match && !stamped.has(match.field.path)) {
+      const text = normalizeText(match.field.displayValue)
+
+      if (text.length >= MIN_FIELD_LENGTH) {
+        match.element.setAttribute(FIELD_ATTR, match.field.path)
+        stamped.set(match.field.path, match.element)
+      }
+    }
+
+    node = walker.nextNode() as HTMLElement | null
+  }
+
+  return stamped
 }
 
-function deactivateElement(element: HTMLElement) {
-  element.removeAttribute('contenteditable')
-  element.classList.remove(EDITING_CLASS)
+function readFieldText(element: HTMLElement): string {
+  return normalizeText(element.innerText)
 }
 
 export function VisualEditorListener() {
@@ -57,31 +92,39 @@ export function VisualEditorListener() {
   const documentDataRef = useRef<Record<string, unknown>>({})
   const fieldDescriptorsRef = useRef<EditableFieldDescriptor[]>([])
   const lookupRef = useRef<ReturnType<typeof buildTextLookup>>(new Map())
-  const activeTargetRef = useRef<HTMLElement | null>(null)
-  const activeFieldRef = useRef<FieldValueEntry | null>(null)
-  const originalTextRef = useRef<string>('')
-  const commitActiveEditRef = useRef<(() => void) | null>(null)
-  const hoverBlockRef = useRef<HTMLElement | null>(null)
+  // Snapshot of each field's text when edit mode was activated or last synced
+  const snapshotsRef = useRef<Map<string, string>>(new Map())
+  // Map from field path → stamped DOM element
+  const stampedRef = useRef<Map<string, HTMLElement>>(new Map())
+  // The editable container element
+  const containerRef = useRef<HTMLElement | null>(null)
+  // Whether we are currently suppressing live-preview re-renders
+  const suppressPreviewRef = useRef(false)
+  // Latest preview data received while suppressed
+  const latestPreviewRef = useRef<Record<string, unknown> | null>(null)
 
+  function rebuildLookup() {
+    const entries = buildFieldValueEntries(documentDataRef.current, fieldDescriptorsRef.current)
+    lookupRef.current = buildTextLookup(entries)
+  }
+
+  function applyFieldDescriptors(
+    fields: EditableFieldDescriptor[],
+    documentData: Record<string, unknown>,
+  ) {
+    fieldDescriptorsRef.current = fields
+    documentDataRef.current = documentData
+    rebuildLookup()
+  }
+
+  // Inject styles once
   useEffect(() => {
-    if (!isLivePreview) {
-      return
+    if (isLivePreview) {
+      injectStyles()
     }
-
-    if (document.getElementById('payload-visual-editor-styles')) {
-      return
-    }
-
-    const style = document.createElement('style')
-    style.id = 'payload-visual-editor-styles'
-    style.textContent = `
-.payload-visual-editor-hover { outline: 1px dashed #0070f3; outline-offset: 3px; cursor: text; }
-.payload-visual-editor-target { outline: 2px dashed #0070f3; outline-offset: 3px; cursor: text; }
-.payload-visual-editor-target:focus { outline: 2px solid #0070f3; }
-`
-    document.head.appendChild(style)
   }, [isLivePreview])
 
+  // Live preview subscription + admin message handling
   useEffect(() => {
     if (!isLivePreview) {
       return
@@ -97,10 +140,6 @@ export function VisualEditorListener() {
       }
 
       if (isVisualEditorSetModeMessage(event.data)) {
-        if (!event.data.enabled) {
-          commitActiveEditRef.current?.()
-        }
-
         setEditMode(event.data.enabled)
 
         if (typeof event.data.collectionSlug === 'string') {
@@ -112,12 +151,7 @@ export function VisualEditorListener() {
 
       if (isVisualEditorSyncFieldsMessage(event.data)) {
         setCollectionSlug(event.data.collectionSlug)
-        applyFieldDescriptors(
-          event.data.fields,
-          documentDataRef.current,
-          fieldDescriptorsRef,
-          lookupRef,
-        )
+        applyFieldDescriptors(event.data.fields, documentDataRef.current)
         return
       }
 
@@ -135,15 +169,18 @@ export function VisualEditorListener() {
 
     const subscription = subscribe({
       callback: (data) => {
-        documentDataRef.current = (data ?? {}) as Record<string, unknown>
+        const docData = (data ?? {}) as Record<string, unknown>
+
+        if (suppressPreviewRef.current) {
+          // Store for later but don't update DOM — user is editing
+          latestPreviewRef.current = docData
+          return
+        }
+
+        documentDataRef.current = docData
 
         if (fieldDescriptorsRef.current.length > 0) {
-          applyFieldDescriptors(
-            fieldDescriptorsRef.current,
-            documentDataRef.current,
-            fieldDescriptorsRef,
-            lookupRef,
-          )
+          rebuildLookup()
         }
       },
       initialData: {},
@@ -156,6 +193,7 @@ export function VisualEditorListener() {
     }
   }, [isLivePreview])
 
+  // Load field descriptors when collection is known
   useEffect(() => {
     if (!isLivePreview || !collectionSlug) {
       return
@@ -172,200 +210,216 @@ export function VisualEditorListener() {
       }
 
       const json = (await response.json()) as { fields: EditableFieldDescriptor[] }
-      applyFieldDescriptors(json.fields, documentDataRef.current, fieldDescriptorsRef, lookupRef)
+      applyFieldDescriptors(json.fields, documentDataRef.current)
     }
 
     void loadFields()
   }, [collectionSlug, isLivePreview])
 
+  // ── Edit mode lifecycle ──
   useEffect(() => {
     if (!isLivePreview || !editMode) {
-      commitActiveEditRef.current = null
-      if (activeTargetRef.current) {
-        deactivateElement(activeTargetRef.current)
-      }
-      activeTargetRef.current = null
-      activeFieldRef.current = null
+      // Not active — cleanup refs only (the previous effect's cleanup handles commit)
+      suppressPreviewRef.current = false
+      snapshotsRef.current.clear()
+      stampedRef.current.clear()
+      containerRef.current = null
+
       return
     }
 
-    const clearHoverBlock = () => {
-      if (hoverBlockRef.current) {
-        hoverBlockRef.current.classList.remove(HOVER_CLASS)
-        hoverBlockRef.current = null
+    // Entering edit mode — find the main content container
+    const container = document.querySelector('main') as HTMLElement | null
+      ?? document.querySelector('article') as HTMLElement | null
+      ?? document.querySelector('[role="main"]') as HTMLElement | null
+      ?? document.body
+
+    containerRef.current = container
+    suppressPreviewRef.current = true
+
+    // Stamp fields and snapshot their text
+    const stamped = stampFieldElements(container, lookupRef.current)
+    stampedRef.current = stamped
+
+    for (const [path, element] of stamped) {
+      snapshotsRef.current.set(path, readFieldText(element))
+    }
+
+    // Make the whole container editable
+    container.setAttribute('contenteditable', 'true')
+    container.classList.add(EDITING_CLASS)
+    container.focus()
+
+    // ── Hover highlighting ──
+    let hoveredField: HTMLElement | null = null
+
+    const onMouseOver = (event: MouseEvent) => {
+      const target = event.target
+      if (!target || !(target instanceof HTMLElement)) return
+
+      const fieldEl = target.closest(`[${FIELD_ATTR}]`) as HTMLElement | null
+      if (fieldEl === hoveredField) return
+
+      if (hoveredField) {
+        hoveredField.classList.remove(HOVER_CLASS)
+      }
+
+      hoveredField = fieldEl
+
+      if (fieldEl) {
+        fieldEl.classList.add(HOVER_CLASS)
       }
     }
 
-    const commitChange = (element: HTMLElement, field: FieldValueEntry) => {
-      const nextValue = readValueForField(element, field)
-      const previous = originalTextRef.current
+    const onMouseOut = (event: MouseEvent) => {
+      if (!hoveredField) return
 
-      if (normalizeTextForMatch(String(nextValue)) === normalizeTextForMatch(previous)) {
-        return
+      const related = event.relatedTarget
+      if (related instanceof Node && hoveredField.contains(related)) return
+
+      hoveredField.classList.remove(HOVER_CLASS)
+      hoveredField = null
+    }
+
+    // ── Track active field for outline ──
+    let activeFieldEl: HTMLElement | null = null
+
+    const onSelectionChange = () => {
+      const sel = document.getSelection()
+      if (!sel || sel.rangeCount === 0) return
+
+      const anchor = sel.anchorNode
+      if (!anchor) return
+
+      const el = anchor instanceof HTMLElement
+        ? anchor.closest(`[${FIELD_ATTR}]`)
+        : anchor.parentElement?.closest(`[${FIELD_ATTR}]`)
+
+      const newActive = (el as HTMLElement | null) ?? null
+
+      if (newActive !== activeFieldEl) {
+        if (activeFieldEl) {
+          activeFieldEl.classList.remove('ve-active')
+        }
+
+        activeFieldEl = newActive
+
+        if (activeFieldEl) {
+          activeFieldEl.classList.add('ve-active')
+        }
+      }
+    }
+
+    // ── Commit logic ──
+    const commitField = (path: string, element: HTMLElement) => {
+      const currentText = readFieldText(element)
+      const originalText = snapshotsRef.current.get(path)
+
+      if (currentText === originalText) {
+        return // No change
       }
 
-      const target = window.opener || window.parent
+      // Update document data
+      const fieldDescriptor = fieldDescriptorsRef.current.find((f) => f.path === path)
+      const fieldType = fieldDescriptor?.type ?? 'text'
+      let value: string | number = currentText
 
+      if (fieldType === 'number') {
+        const parsed = Number(currentText)
+        value = Number.isNaN(parsed) ? currentText : parsed
+      }
+
+      documentDataRef.current = setValueAtPath(documentDataRef.current, path, value)
+
+      // Update snapshot so we don't re-commit
+      snapshotsRef.current.set(path, currentText)
+
+      // Post update to admin
+      const target = window.opener || window.parent
       target?.postMessage(
         {
-          path: field.path,
+          path,
           saveDraft: true,
           type: VISUAL_EDITOR_UPDATE_TYPE,
-          value: nextValue,
+          value,
         },
         window.location.origin,
       )
     }
 
-    const commitActiveEdit = () => {
-      const active = activeTargetRef.current
-      const field = activeFieldRef.current
+    // Debounced commit on input
+    let inputTimer: ReturnType<typeof setTimeout> | null = null
 
-      if (!active || !field) {
-        return
+    const onInput = () => {
+      if (inputTimer) {
+        clearTimeout(inputTimer)
       }
 
-      commitChange(active, field)
-      deactivateElement(active)
-      activeTargetRef.current = null
-      activeFieldRef.current = null
+      inputTimer = setTimeout(() => {
+        inputTimer = null
+        commitAllDirtyFields()
+      }, 300)
     }
 
-    commitActiveEditRef.current = commitActiveEdit
-
-    const activateBlock = (element: HTMLElement, field: FieldValueEntry) => {
-      if (activeTargetRef.current && activeTargetRef.current !== element) {
-        commitActiveEdit()
+    const commitAllDirtyFields = () => {
+      for (const [path, element] of stampedRef.current) {
+        if (element.isConnected) {
+          commitField(path, element)
+        }
       }
-
-      clearHoverBlock()
-      element.setAttribute('contenteditable', 'true')
-      element.classList.add(EDITING_CLASS)
-      element.classList.remove(HOVER_CLASS)
-      activeTargetRef.current = element
-      activeFieldRef.current = field
-      originalTextRef.current = normalizeText(element.innerText)
     }
 
-    const onMouseOver = (event: MouseEvent) => {
-      if (activeTargetRef.current?.contains(event.target as Node)) {
-        return
-      }
-
-      const match = findEditableElementFromTarget(event.target, lookupRef.current)
-
-      if (!match || normalizeText(match.field.displayValue).length < MIN_FIELD_LENGTH) {
-        clearHoverBlock()
-        return
-      }
-
-      if (hoverBlockRef.current === match.element) {
-        return
-      }
-
-      clearHoverBlock()
-      match.element.setAttribute('contenteditable', 'true')
-      match.element.classList.add(HOVER_CLASS)
-      hoverBlockRef.current = match.element
-    }
-
-    const onMouseOut = (event: MouseEvent) => {
-      const hover = hoverBlockRef.current
-
-      if (!hover) {
-        return
-      }
-
-      const related = event.relatedTarget
-
-      if (related instanceof Node && hover.contains(related)) {
-        return
-      }
-
-      if (hover !== activeTargetRef.current) {
-        hover.removeAttribute('contenteditable')
-      }
-
-      hover.classList.remove(HOVER_CLASS)
-      hoverBlockRef.current = null
-    }
-
-    const onMouseDown = (event: MouseEvent) => {
-      const match = findEditableElementFromTarget(event.target, lookupRef.current)
-
-      if (!match || normalizeText(match.field.displayValue).length < MIN_FIELD_LENGTH) {
-        return
-      }
-
-      if (activeTargetRef.current === match.element) {
-        return
-      }
-
-      activateBlock(match.element, match.field)
-    }
-
-    const onFocusIn = (event: FocusEvent) => {
-      const match = findEditableElementFromTarget(event.target, lookupRef.current)
-
-      if (!match || normalizeText(match.field.displayValue).length < MIN_FIELD_LENGTH) {
-        return
-      }
-
-      if (activeTargetRef.current === match.element) {
-        return
-      }
-
-      activateBlock(match.element, match.field)
-    }
-
-    const onFocusOut = (event: FocusEvent) => {
-      const active = activeTargetRef.current
-
-      if (!active || event.target !== active) {
-        return
-      }
-
-      const related = event.relatedTarget
-
-      if (related instanceof Node && active.contains(related)) {
-        return
-      }
-
-      commitActiveEdit()
-    }
-
+    // ── Escape to revert ──
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') {
-        return
+      if (event.key === 'Escape') {
+        // Revert all fields to snapshot
+        for (const [path, element] of stampedRef.current) {
+          const original = snapshotsRef.current.get(path)
+          if (original != null && element.isConnected) {
+            element.innerText = original
+          }
+        }
+        container.blur()
       }
-
-      const active = activeTargetRef.current
-
-      if (!active) {
-        return
-      }
-
-      active.innerText = originalTextRef.current
-      active.blur()
     }
 
-    document.addEventListener('mouseover', onMouseOver, true)
-    document.addEventListener('mouseout', onMouseOut, true)
-    document.addEventListener('mousedown', onMouseDown, true)
-    document.addEventListener('focusin', onFocusIn, true)
-    document.addEventListener('focusout', onFocusOut, true)
-    document.addEventListener('keydown', onKeyDown, true)
+    container.addEventListener('mouseover', onMouseOver, true)
+    container.addEventListener('mouseout', onMouseOut, true)
+    container.addEventListener('input', onInput, true)
+    container.addEventListener('keydown', onKeyDown, true)
+    document.addEventListener('selectionchange', onSelectionChange)
 
     return () => {
-      commitActiveEditRef.current = null
-      document.removeEventListener('mouseover', onMouseOver, true)
-      document.removeEventListener('mouseout', onMouseOut, true)
-      document.removeEventListener('mousedown', onMouseDown, true)
-      document.removeEventListener('focusin', onFocusIn, true)
-      document.removeEventListener('focusout', onFocusOut, true)
-      document.removeEventListener('keydown', onKeyDown, true)
-      clearHoverBlock()
-      commitActiveEdit()
+      container.removeEventListener('mouseover', onMouseOver, true)
+      container.removeEventListener('mouseout', onMouseOut, true)
+      container.removeEventListener('input', onInput, true)
+      container.removeEventListener('keydown', onKeyDown, true)
+      document.removeEventListener('selectionchange', onSelectionChange)
+
+      if (hoveredField) {
+        hoveredField.classList.remove(HOVER_CLASS)
+      }
+      if (activeFieldEl) {
+        activeFieldEl.classList.remove('ve-active')
+      }
+      if (inputTimer) {
+        clearTimeout(inputTimer)
+      }
+
+      // Commit before unmount
+      commitAllDirtyFields()
+
+      container.removeAttribute('contenteditable')
+      container.classList.remove(EDITING_CLASS)
+      containerRef.current = null
+      suppressPreviewRef.current = false
+
+      // Apply any queued preview data
+      if (latestPreviewRef.current) {
+        documentDataRef.current = latestPreviewRef.current
+        latestPreviewRef.current = null
+        rebuildLookup()
+      }
     }
   }, [editMode, isLivePreview])
 

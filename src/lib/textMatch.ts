@@ -131,6 +131,26 @@ function resolveLooseFieldForElement(
   return pickCandidate(element, bestKey, candidates)
 }
 
+export function isLeafFieldBlock(
+  element: HTMLElement,
+  lookup: Map<string, FieldValueEntry[]>,
+  field: FieldValueEntry,
+): boolean {
+  for (const child of element.querySelectorAll('*')) {
+    if (!(child instanceof HTMLElement)) {
+      continue
+    }
+
+    const childField = resolveFieldForElement(child, lookup)
+
+    if (childField && childField.path !== field.path) {
+      return false
+    }
+  }
+
+  return true
+}
+
 export function resolveFieldForElement(
   element: HTMLElement,
   lookup: Map<string, FieldValueEntry[]>,
@@ -192,7 +212,7 @@ export function findFieldContextFromTarget(
 
     const field = resolveFieldForElement(element, lookup)
 
-    if (field) {
+    if (field && isLeafFieldBlock(element, lookup, field)) {
       const length = normalizeText(element.innerText).length
 
       if (length < bestLength) {

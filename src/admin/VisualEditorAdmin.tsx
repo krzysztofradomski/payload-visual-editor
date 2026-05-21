@@ -182,8 +182,8 @@ export const VisualEditorAdmin = () => {
 
   const handleEditToggle = useCallback(() => {
     if (editMode) {
-      postEditModeToPreview(false)
       flushSaveDraft()
+      postEditModeToPreview(false)
       setEditMode(false)
       return
     }

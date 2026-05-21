@@ -1,8 +1,8 @@
 'use client'
 
 import { subscribe, unsubscribe } from '@payloadcms/live-preview'
-import { useVisualEditorMode } from 'payload-visual-editor/client'
-import { useEffect, useState } from 'react'
+import { useVisualEditorEditMode, useVisualEditorMode } from 'payload-visual-editor/client'
+import { useEffect, useRef, useState } from 'react'
 
 import { formatPostMeta, renderRichText } from '../lib/renderPost.js'
 import type { DevPost } from '../lib/types.js'
@@ -14,7 +14,11 @@ type Props = {
 
 export function PostPreview({ initialPost, serverURL }: Props) {
   const isLivePreview = useVisualEditorMode()
+  const isVisualEditing = useVisualEditorEditMode()
   const [post, setPost] = useState(initialPost)
+  const pendingRef = useRef<DevPost | null>(null)
+  const editingRef = useRef(isVisualEditing)
+  editingRef.current = isVisualEditing
 
   useEffect(() => {
     setPost(initialPost)
@@ -27,6 +31,12 @@ export function PostPreview({ initialPost, serverURL }: Props) {
 
     const listener = subscribe<DevPost>({
       callback: (data) => {
+        if (editingRef.current) {
+          // Don't re-render while user is editing — store for later
+          pendingRef.current = data
+          return
+        }
+
         setPost(data)
       },
       initialData: initialPost,
@@ -37,6 +47,14 @@ export function PostPreview({ initialPost, serverURL }: Props) {
       unsubscribe(listener)
     }
   }, [initialPost, isLivePreview, serverURL])
+
+  // When exiting edit mode, flush pending preview data
+  useEffect(() => {
+    if (!isVisualEditing && pendingRef.current) {
+      setPost(pendingRef.current)
+      pendingRef.current = null
+    }
+  }, [isVisualEditing])
 
   const content = renderRichText(post.content)
 

@@ -54,12 +54,25 @@
   fill: currentColor;
 }
 
-.payload-visual-editor-target {
-  outline: 2px dashed #0070f3;
+/* Edit-mode container */
+.payload-visual-editor-editing {
+  outline: none;
+  caret-color: #0070f3;
+}
+
+.payload-visual-editor-editing [data-ve-path] {
+  transition: outline 0.15s ease;
+  border-radius: 2px;
+}
+
+.payload-visual-editor-editing [data-ve-path]:hover,
+.payload-visual-editor-hover {
+  outline: 2px dashed rgba(0, 112, 243, 0.5);
   outline-offset: 3px;
   cursor: text;
 }
 
-.payload-visual-editor-target:focus {
+.payload-visual-editor-editing [data-ve-path].ve-active {
   outline: 2px solid #0070f3;
+  outline-offset: 3px;
 }

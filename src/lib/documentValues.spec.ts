@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildFieldValueEntries, getValueAtPath } from './documentValues.js'
+import { buildFieldValueEntries, getValueAtPath, setValueAtPath } from './documentValues.js'
 
 describe('documentValues', () => {
   it('reads nested paths from preview data', () => {
@@ -11,6 +11,12 @@ describe('documentValues', () => {
 
     expect(getValueAtPath(data, 'title')).toBe('About us')
     expect(getValueAtPath(data, 'layout.0.body.content')).toBe('Hello')
+  })
+
+  it('writes nested paths for optimistic preview updates', () => {
+    const updated = setValueAtPath({ title: 'Hello', meta: { label: 'A' } }, 'meta.label', 'B')
+
+    expect(updated).toEqual({ title: 'Hello', meta: { label: 'B' } })
   })
 
   it('builds display values for editable fields', () => {
