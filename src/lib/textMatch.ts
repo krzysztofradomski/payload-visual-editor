@@ -203,7 +203,7 @@ export function findFieldContextFromTarget(
 
   let element = node instanceof HTMLElement ? node : null
   let bestMatch: { blockElement: HTMLElement; field: FieldValueEntry } | null = null
-  let bestLength = Number.POSITIVE_INFINITY
+  let bestLength = -1
 
   while (element && element !== document.body) {
     if (element.closest(SKIP_ANCESTOR_SELECTOR)) {
@@ -215,7 +215,7 @@ export function findFieldContextFromTarget(
     if (field && isLeafFieldBlock(element, lookup, field)) {
       const length = normalizeText(element.innerText).length
 
-      if (length < bestLength) {
+      if (length >= bestLength) {
         bestLength = length
         bestMatch = { blockElement: element, field }
       }

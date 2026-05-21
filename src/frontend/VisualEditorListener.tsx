@@ -241,14 +241,12 @@ export function VisualEditorListener() {
     const stamped = stampFieldElements(container, lookupRef.current)
     stampedRef.current = stamped
 
+    container.classList.add(EDITING_CLASS)
+
     for (const [path, element] of stamped) {
       snapshotsRef.current.set(path, readFieldText(element))
+      element.setAttribute('contenteditable', 'true')
     }
-
-    // Make the whole container editable
-    container.setAttribute('contenteditable', 'true')
-    container.classList.add(EDITING_CLASS)
-    container.focus()
 
     // ── Hover highlighting ──
     let hoveredField: HTMLElement | null = null
@@ -377,9 +375,9 @@ export function VisualEditorListener() {
           const original = snapshotsRef.current.get(path)
           if (original != null && element.isConnected) {
             element.innerText = original
+            element.blur()
           }
         }
-        container.blur()
       }
     }
 
@@ -409,7 +407,9 @@ export function VisualEditorListener() {
       // Commit before unmount
       commitAllDirtyFields()
 
-      container.removeAttribute('contenteditable')
+      for (const element of stampedRef.current.values()) {
+        element.removeAttribute('contenteditable')
+      }
       container.classList.remove(EDITING_CLASS)
       containerRef.current = null
       suppressPreviewRef.current = false
