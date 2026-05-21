@@ -20,14 +20,19 @@ if (!process.env.ROOT_DIR) {
 
 const buildConfigWithMemoryDB = async () => {
   if (!process.env.DATABASE_URL?.trim()) {
-    const memoryDB = await MongoMemoryReplSet.create({
-      replSet: {
-        count: 3,
-        dbName: 'payloadmemory',
-      },
-    })
+    const globalStore = globalThis as unknown as { _mongoMemoryDBUri?: string }
 
-    process.env.DATABASE_URL = `${memoryDB.getUri()}&retryWrites=true`
+    if (!globalStore._mongoMemoryDBUri) {
+      const memoryDB = await MongoMemoryReplSet.create({
+        replSet: {
+          count: 3,
+          dbName: 'payloadmemory',
+        },
+      })
+      globalStore._mongoMemoryDBUri = `${memoryDB.getUri()}&retryWrites=true`
+    }
+
+    process.env.DATABASE_URL = globalStore._mongoMemoryDBUri
   }
 
   return buildConfig({
