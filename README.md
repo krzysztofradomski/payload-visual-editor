@@ -3,7 +3,9 @@
 Inline visual editing for [Payload CMS](https://payloadcms.com) live preview.
 
 ![Payload admin preview toolbar closed](media/toolbar-menu-closed.png)
-![Payload admin preview toolbar opened](media/toolbar-menu-opened.png) Edit text directly in the preview iframe; changes sync back to the admin document form and save as a draft.
+![Payload admin preview toolbar opened](media/toolbar-menu-opened.png)
+
+Edit text directly in the preview iframe. Changes sync back to the admin document form and save as a draft when you click **Done**.
 
 <details>
 <summary><b>Demo video</b> — click to expand (~9 MB, loads on demand)</summary>
@@ -29,18 +31,20 @@ Inline visual editing for [Payload CMS](https://payloadcms.com) live preview.
 
 - Payload `^3.84.0`
 - `@payloadcms/ui` and `@payloadcms/live-preview` (peer dependencies)
-- Live preview configured on the collection
-- `VisualEditorListener` mounted in your frontend root layout
+- [Live preview](https://payloadcms.com/docs/live-preview) configured on the collection
+- `VisualEditorListener` mounted in the frontend layout used for preview URLs
 
-## Installation - not yet published!
+## Installation
+
+> **Not yet published to npm.** Install from a local checkout or git URL until the first release.
 
 ```bash
 pnpm add @krzysztofradomski/payload-visual-editor
 ```
 
-When developing against a local checkout, link with `file:` and run `pnpm build` in the plugin package after changes.
+## Setup
 
-## Plugin configuration
+### 1. Register the plugin
 
 ```ts
 import { payloadVisualEditor } from '@krzysztofradomski/payload-visual-editor'
@@ -70,22 +74,40 @@ export default buildConfig({
 })
 ```
 
-### Collection options
+The plugin registers the **Edit / Done** admin control automatically. You do not need to wire admin components manually.
 
-| Value                          | Description                                           |
-| ------------------------------ | ----------------------------------------------------- |
-| `true`                         | All fields matching `editableFieldTypes` are editable |
-| `{ fields?: string[] }`        | Only these dot-paths (e.g. `meta.title`)              |
-| `{ excludeFields?: string[] }` | Remove paths from the editable set (e.g. `slug`)      |
+After adding the plugin, regenerate your project's import map so Payload can resolve the admin UI:
 
-The plugin registers an **Edit** button via `beforeDocumentControls` on enabled collections. No manual admin component wiring is required.
+```bash
+payload generate:importmap
+```
 
-## Frontend setup
+### 2. Enable live preview on a collection
 
-Add the listener once to your frontend root layout (the layout used for live-preview URLs):
+```ts
+export const Articles: CollectionConfig = {
+  slug: 'articles',
+  admin: {
+    livePreview: {
+      url: ({ data }) => `/articles/${data?.slug}?payloadLivePreview=true`,
+    },
+  },
+  fields: [
+    { name: 'title', type: 'text', required: true },
+    { name: 'slug', type: 'text', required: true },
+    { name: 'content', type: 'richText' },
+  ],
+}
+```
+
+Preview URLs must be served by the same frontend layout where you mount `VisualEditorListener`.
+
+### 3. Mount the frontend listener
+
+Add the listener once to the root layout of your live-preview frontend (not the admin layout):
 
 ```tsx
-import { VisualEditorListener } from 'payload-visual-editor/client'
+import { VisualEditorListener } from '@krzysztofradomski/payload-visual-editor/client'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -99,7 +121,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-### Next.js
+### 4. Configure Next.js
 
 Transpile the package and allow ESM subpath imports:
 
@@ -107,11 +129,11 @@ Transpile the package and allow ESM subpath imports:
 // next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['payload-visual-editor'],
+  transpilePackages: ['@krzysztofradomski/payload-visual-editor'],
   webpack: (config) => {
     config.module.rules.push({
       test: /\.m?js$/,
-      include: /payload-visual-editor/,
+      include: /@krzysztofradomski\/payload-visual-editor/,
       resolve: { fullySpecified: false },
     })
     return config
@@ -123,6 +145,16 @@ module.exports = nextConfig
 
 If you already have a `webpack` function, merge this rule into it instead of replacing the whole callback.
 
+If you use `@payloadcms/next/withPayload`, add `transpilePackages` to that config the same way.
+
+### Collection options
+
+| Value                          | Description                                           |
+| ------------------------------ | ----------------------------------------------------- |
+| `true`                         | All fields matching `editableFieldTypes` are editable |
+| `{ fields?: string[] }`        | Only these dot-paths (e.g. `meta.title`)              |
+| `{ excludeFields?: string[] }` | Remove paths from the editable set (e.g. `slug`)      |
+
 ## Usage
 
 1. Open a document that has **live preview** enabled.
@@ -133,11 +165,71 @@ If you already have a `webpack` function, merge this rule into it instead of rep
 
 Edits update the admin form immediately. Draft saves are debounced while editing; **Done** flushes any pending save.
 
+### Live preview pages with React state
+
+If your preview page subscribes to `@payloadcms/live-preview` and stores document data in React state, pause updates while the user is editing. Otherwise incoming preview events will re-render the page, wipe `contenteditable` state, and lose the cursor.
+
+Use the hooks exported from the client entry:
+
+```tsx
+'use client'
+
+import { subscribe, unsubscribe } from '@payloadcms/live-preview'
+import {
+  useVisualEditorEditMode,
+  useVisualEditorMode,
+} from '@krzysztofradomski/payload-visual-editor/client'
+import { useEffect, useRef, useState } from 'react'
+
+export function ArticlePreview({ initialArticle, serverURL }) {
+  const isLivePreview = useVisualEditorMode()
+  const isVisualEditing = useVisualEditorEditMode()
+  const [article, setArticle] = useState(initialArticle)
+  const pendingRef = useRef<typeof initialArticle | null>(null)
+  const editingRef = useRef(isVisualEditing)
+  editingRef.current = isVisualEditing
+
+  useEffect(() => {
+    if (!isLivePreview) return
+
+    const listener = subscribe({
+      callback: (data) => {
+        if (editingRef.current) {
+          pendingRef.current = data
+          return
+        }
+        setArticle(data)
+      },
+      initialData: initialArticle,
+      serverURL,
+    })
+
+    return () => unsubscribe(listener)
+  }, [initialArticle, isLivePreview, serverURL])
+
+  useEffect(() => {
+    if (!isVisualEditing && pendingRef.current) {
+      setArticle(pendingRef.current)
+      pendingRef.current = null
+    }
+  }, [isVisualEditing])
+
+  return (
+    <article>
+      <h1>{article.title}</h1>
+      {/* render other fields */}
+    </article>
+  )
+}
+```
+
+See `dev/components/PostPreview.tsx` in this repo for a full working example.
+
 ### How matching works
 
-The listener loads editable field paths from the API, subscribes to live-preview document data, and builds a lookup from field values (including rich text plain text and paragraph segments). Visible DOM text is matched case-insensitively; the smallest matching element is preferred when walking up the tree.
+The listener loads editable field paths from the plugin API, subscribes to live-preview document data, and builds a lookup from field values (including rich text plain text and paragraph segments). Visible DOM text is matched case-insensitively.
 
-Your templates only need to render the same text as stored in Payload — no special markup.
+Your templates only need to render the same text as stored in Payload — no special markup. Text that does not appear in the DOM (hidden fields, computed-only values) cannot be edited visually.
 
 ## API
 
@@ -159,19 +251,25 @@ Returns `400` if the collection is not enabled for visual editing.
 
 ## Exports
 
-| Import                         | Description                                                                    |
-| ------------------------------ | ------------------------------------------------------------------------------ |
-| `payload-visual-editor`        | Plugin (`payloadVisualEditor`) and types                                       |
-| `payload-visual-editor/client` | `VisualEditorListener`, `VisualEditorAdmin` (used automatically by the plugin) |
-| `payload-visual-editor/rsc`    | Re-exports for RSC-compatible setups                                           |
+| Import                                              | Description                                                                 |
+| --------------------------------------------------- | --------------------------------------------------------------------------- |
+| `@krzysztofradomski/payload-visual-editor`          | Plugin (`payloadVisualEditor`) and types                                    |
+| `@krzysztofradomski/payload-visual-editor/client` | `VisualEditorListener`, hooks, `VisualEditorAdmin` (registered by the plugin) |
+| `@krzysztofradomski/payload-visual-editor/rsc`    | Re-exports for RSC-compatible setups                                        |
 
-## Development
+## Troubleshooting
 
-```bash
-pnpm install
-pnpm build
-pnpm test:int
-```
+| Issue | What to check |
+| ----- | ------------- |
+| **Edit** button missing | Collection enabled in `payloadVisualEditor({ collections })` and live preview configured |
+| No blue outlines in preview | `VisualEditorListener` mounted in the preview frontend layout; field text is visible in the DOM |
+| Edits lost while typing | Preview page re-renders on live-preview updates — use the pause/flush pattern above |
+| Admin build error after install | Run `payload generate:importmap` in your project |
+| Module not found / ESM errors in Next.js | Add `transpilePackages` and the webpack `fullySpecified` rule (see setup step 4) |
+
+## Contributing
+
+This repository is also a Payload plugin template. For local development, testing, and release workflow, see [development.sketch.md](./development.sketch.md).
 
 ## License
 
