@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import '@testing-library/jest-dom/vitest'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { FieldValueEntry } from './documentValues.js'

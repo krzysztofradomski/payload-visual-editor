@@ -54,10 +54,7 @@ export function stampFieldElements(
   lookup: Map<string, FieldValueEntry[]>,
 ): Map<string, HTMLElement> {
   const stamped = new Map<string, HTMLElement>()
-  const candidatesByPath = new Map<
-    string,
-    { elements: Set<HTMLElement>; field: FieldValueEntry }
-  >()
+  const candidatesByPath = new Map<string, { elements: Set<HTMLElement>; field: FieldValueEntry }>()
 
   // Clear previous stamps
   for (const el of container.querySelectorAll(`[${FIELD_ATTR}]`)) {
@@ -311,10 +308,11 @@ export function VisualEditorListener() {
     }
 
     // Entering edit mode — find the main content container
-    const container = document.querySelector('main')
-      ?? document.querySelector('article')
-      ?? document.querySelector('[role="main"]')
-      ?? document.body
+    const container =
+      document.querySelector('main') ??
+      document.querySelector('article') ??
+      document.querySelector('[role="main"]') ??
+      document.body
 
     containerRef.current = container
     suppressPreviewRef.current = true
@@ -335,10 +333,14 @@ export function VisualEditorListener() {
 
     const onMouseOver = (event: MouseEvent) => {
       const target = event.target
-      if (!target || !(target instanceof HTMLElement)) {return}
+      if (!target || !(target instanceof HTMLElement)) {
+        return
+      }
 
-      const fieldEl = target.closest(`[${FIELD_ATTR}]`)
-      if (fieldEl === hoveredField) {return}
+      const fieldEl = target.closest<HTMLElement>(`[${FIELD_ATTR}]`)
+      if (fieldEl === hoveredField) {
+        return
+      }
 
       if (hoveredField) {
         hoveredField.classList.remove(HOVER_CLASS)
@@ -352,10 +354,14 @@ export function VisualEditorListener() {
     }
 
     const onMouseOut = (event: MouseEvent) => {
-      if (!hoveredField) {return}
+      if (!hoveredField) {
+        return
+      }
 
       const related = event.relatedTarget
-      if (related instanceof Node && hoveredField.contains(related)) {return}
+      if (related instanceof Node && hoveredField.contains(related)) {
+        return
+      }
 
       hoveredField.classList.remove(HOVER_CLASS)
       hoveredField = null
@@ -366,14 +372,19 @@ export function VisualEditorListener() {
 
     const onSelectionChange = () => {
       const sel = document.getSelection()
-      if (!sel || sel.rangeCount === 0) {return}
+      if (!sel || sel.rangeCount === 0) {
+        return
+      }
 
       const anchor = sel.anchorNode
-      if (!anchor) {return}
+      if (!anchor) {
+        return
+      }
 
-      const el = anchor instanceof HTMLElement
-        ? anchor.closest(`[${FIELD_ATTR}]`)
-        : anchor.parentElement?.closest(`[${FIELD_ATTR}]`)
+      const el =
+        anchor instanceof HTMLElement
+          ? anchor.closest(`[${FIELD_ATTR}]`)
+          : anchor.parentElement?.closest(`[${FIELD_ATTR}]`)
 
       const newActive = (el as HTMLElement | null) ?? null
 

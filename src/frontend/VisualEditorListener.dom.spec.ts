@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it } from 'vitest'
+import '@testing-library/jest-dom/vitest'
 
 import { type FieldValueEntry } from '../lib/documentValues.js'
 import { buildTextLookup } from '../lib/textMatch.js'

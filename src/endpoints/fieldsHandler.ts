@@ -3,7 +3,8 @@ import type { Endpoint, PayloadRequest } from 'payload'
 import type {
   EditableFieldDescriptor,
   EditableFieldType,
-  VisualEditorCollectionConfig, VisualEditorFieldsResponse 
+  VisualEditorCollectionConfig,
+  VisualEditorFieldsResponse,
 } from '../types.js'
 
 import { collectEditableFields } from '../lib/collectEditableFields.js'
@@ -36,11 +37,9 @@ function filterFieldsForCollection(
   return filtered
 }
 
-export function createFieldsEndpoint(
-  pluginState: VisualEditorPluginState,
-): Endpoint {
+export function createFieldsEndpoint(pluginState: VisualEditorPluginState): Endpoint {
   return {
-    handler: async (req: PayloadRequest) => {
+    handler: (req: PayloadRequest) => {
       const collection = req.query?.collection
 
       if (typeof collection !== 'string') {

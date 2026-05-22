@@ -1,4 +1,4 @@
-import type { CollectionSlug, Field, FieldTypes } from 'payload'
+import type { Field, FieldTypes } from 'payload'
 
 export const DEFAULT_EDITABLE_FIELD_TYPES = [
   'text',
