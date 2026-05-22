@@ -16,6 +16,7 @@ import {
 import {
   buildTextLookup,
   findEditableElementFromTarget,
+  resolveFieldForElement,
   normalizeText,
 } from '../lib/textMatch.js'
 import type { EditableFieldDescriptor } from '../types.js'
@@ -47,34 +48,114 @@ function injectStyles() {
  * Walk the container and stamp every element that matches a known field with
  * `data-ve-path`. Returns a map from path → element for quick access.
  */
-function stampFieldElements(
+export function stampFieldElements(
   container: HTMLElement,
   lookup: Map<string, FieldValueEntry[]>,
 ): Map<string, HTMLElement> {
   const stamped = new Map<string, HTMLElement>()
+  const candidatesByPath = new Map<
+    string,
+    { field: FieldValueEntry; elements: Set<HTMLElement> }
+  >()
 
   // Clear previous stamps
   for (const el of container.querySelectorAll(`[${FIELD_ATTR}]`)) {
     el.removeAttribute(FIELD_ATTR)
   }
 
-  // Walk every element inside the container
+  // Walk every element inside the container and collect candidates by field path.
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT)
   let node = walker.nextNode() as HTMLElement | null
 
   while (node) {
     const match = findEditableElementFromTarget(node, lookup)
 
-    if (match && !stamped.has(match.field.path)) {
-      const text = normalizeText(match.field.displayValue)
+    if (match) {
+      const existing = candidatesByPath.get(match.field.path)
 
-      if (text.length >= MIN_FIELD_LENGTH) {
-        match.element.setAttribute(FIELD_ATTR, match.field.path)
-        stamped.set(match.field.path, match.element)
+      if (existing) {
+        existing.elements.add(match.element)
+      } else {
+        candidatesByPath.set(match.field.path, {
+          elements: new Set([match.element]),
+          field: match.field,
+        })
       }
     }
 
     node = walker.nextNode() as HTMLElement | null
+  }
+
+  const getCommonAncestor = (elements: HTMLElement[]): HTMLElement | null => {
+    const [first, ...rest] = elements
+
+    if (!first) {
+      return null
+    }
+
+    let ancestor: HTMLElement | null = first
+
+    for (const element of rest) {
+      while (ancestor && !ancestor.contains(element)) {
+        ancestor = ancestor.parentElement
+      }
+    }
+
+    return ancestor
+  }
+
+  const isIsolatedToPath = (element: HTMLElement, path: string): boolean => {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT)
+    let node = walker.currentNode as HTMLElement | null
+
+    while (node) {
+      const resolved = resolveFieldForElement(node, lookup)
+
+      if (resolved && resolved.path !== path) {
+        return false
+      }
+
+      node = walker.nextNode() as HTMLElement | null
+    }
+
+    return true
+  }
+
+  for (const [path, { field, elements }] of candidatesByPath) {
+    const list = [...elements]
+    const commonAncestor = getCommonAncestor(list)
+    const bestCandidate = list.reduce<HTMLElement | null>((best, current) => {
+      if (!best) {
+        return current
+      }
+
+      return normalizeText(current.innerText).length > normalizeText(best.innerText).length
+        ? current
+        : best
+    }, null)
+
+    const preferred =
+      commonAncestor &&
+      commonAncestor !== document.body &&
+      commonAncestor !== container &&
+      container.contains(commonAncestor) &&
+      normalizeText(commonAncestor.innerText).length >= MIN_FIELD_LENGTH &&
+      isIsolatedToPath(commonAncestor, path)
+        ? commonAncestor
+        : bestCandidate
+
+    if (!preferred) {
+      continue
+    }
+
+    const text = normalizeText(field.displayValue)
+
+    if (text.length < MIN_FIELD_LENGTH) {
+      continue
+    }
+
+    preferred.setAttribute(FIELD_ATTR, path)
+    stamped.set(path, preferred)
   }
 
   return stamped
