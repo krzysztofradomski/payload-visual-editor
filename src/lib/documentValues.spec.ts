@@ -10,8 +10,8 @@ import {
 describe('documentValues', () => {
   it('reads nested paths from preview data', () => {
     const data = {
-      title: 'About us',
       layout: [{ body: { content: 'Hello' } }],
+      title: 'About us',
     }
 
     expect(getValueAtPath(data, 'title')).toBe('About us')
@@ -19,23 +19,23 @@ describe('documentValues', () => {
   })
 
   it('writes nested paths for optimistic preview updates', () => {
-    const updated = setValueAtPath({ title: 'Hello', meta: { label: 'A' } }, 'meta.label', 'B')
+    const updated = setValueAtPath({ meta: { label: 'A' }, title: 'Hello' }, 'meta.label', 'B')
 
-    expect(updated).toEqual({ title: 'Hello', meta: { label: 'B' } })
+    expect(updated).toEqual({ meta: { label: 'B' }, title: 'Hello' })
   })
 
   it('builds display values for editable fields', () => {
     const entries = buildFieldValueEntries(
       { title: 'News', views: 12 },
       [
-        { path: 'title', type: 'text' },
-        { path: 'views', type: 'number' },
+        { type: 'text', path: 'title' },
+        { type: 'number', path: 'views' },
       ],
     )
 
     expect(entries).toEqual([
-      { path: 'title', type: 'text', displayValue: 'News' },
-      { path: 'views', type: 'number', displayValue: '12' },
+      { type: 'text', displayValue: 'News', path: 'title' },
+      { type: 'number', displayValue: '12', path: 'views' },
     ])
   })
 
@@ -49,7 +49,7 @@ describe('documentValues', () => {
     const updated = setValueAtPath(original, 'meta.label', 'B')
 
     expect(original.meta).toEqual({ label: 'A' })
-    expect(updated).toEqual({ title: 'Hello', meta: { label: 'B' } })
+    expect(updated).toEqual({ meta: { label: 'B' }, title: 'Hello' })
   })
 
   it('creates intermediate objects for deep paths', () => {
@@ -89,9 +89,9 @@ describe('documentValues', () => {
       const entries = buildFieldValueEntries(
         { title: '', views: null },
         [
-          { path: 'title', type: 'text' },
-          { path: 'views', type: 'number' },
-          { path: 'missing', type: 'text' },
+          { type: 'text', path: 'title' },
+          { type: 'number', path: 'views' },
+          { type: 'text', path: 'missing' },
         ],
       )
 

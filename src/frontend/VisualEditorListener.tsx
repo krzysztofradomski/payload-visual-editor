@@ -3,10 +3,12 @@
 import { ready, subscribe, unsubscribe } from '@payloadcms/live-preview'
 import { useEffect, useRef, useState } from 'react'
 
+import type { EditableFieldDescriptor } from '../types.js'
+
 import {
   buildFieldValueEntries,
-  setValueAtPath,
   type FieldValueEntry,
+  setValueAtPath,
 } from '../lib/documentValues.js'
 import {
   isVisualEditorSetModeMessage,
@@ -16,10 +18,9 @@ import {
 import {
   buildTextLookup,
   findEditableElementFromTarget,
-  resolveFieldForElement,
   normalizeText,
+  resolveFieldForElement,
 } from '../lib/textMatch.js'
-import type { EditableFieldDescriptor } from '../types.js'
 import { useVisualEditorMode } from './useVisualEditorMode.js'
 
 const MIN_FIELD_LENGTH = 2
@@ -55,7 +56,7 @@ export function stampFieldElements(
   const stamped = new Map<string, HTMLElement>()
   const candidatesByPath = new Map<
     string,
-    { field: FieldValueEntry; elements: Set<HTMLElement> }
+    { elements: Set<HTMLElement>; field: FieldValueEntry }
   >()
 
   // Clear previous stamps
@@ -121,7 +122,7 @@ export function stampFieldElements(
     return true
   }
 
-  for (const [path, { field, elements }] of candidatesByPath) {
+  for (const [path, { elements, field }] of candidatesByPath) {
     const list = [...elements]
     const commonAncestor = getCommonAncestor(list)
     const bestCandidate = list.reduce<HTMLElement | null>((best, current) => {
@@ -168,7 +169,7 @@ function readFieldText(element: HTMLElement): string {
 export function VisualEditorListener() {
   const isLivePreview = useVisualEditorMode()
   const [editMode, setEditMode] = useState(false)
-  const [collectionSlug, setCollectionSlug] = useState<string | null>(null)
+  const [collectionSlug, setCollectionSlug] = useState<null | string>(null)
 
   const documentDataRef = useRef<Record<string, unknown>>({})
   const fieldDescriptorsRef = useRef<EditableFieldDescriptor[]>([])
@@ -182,7 +183,7 @@ export function VisualEditorListener() {
   // Whether we are currently suppressing live-preview re-renders
   const suppressPreviewRef = useRef(false)
   // Latest preview data received while suppressed
-  const latestPreviewRef = useRef<Record<string, unknown> | null>(null)
+  const latestPreviewRef = useRef<null | Record<string, unknown>>(null)
 
   function rebuildLookup() {
     const entries = buildFieldValueEntries(documentDataRef.current, fieldDescriptorsRef.current)
@@ -310,9 +311,9 @@ export function VisualEditorListener() {
     }
 
     // Entering edit mode — find the main content container
-    const container = document.querySelector('main') as HTMLElement | null
-      ?? document.querySelector('article') as HTMLElement | null
-      ?? document.querySelector('[role="main"]') as HTMLElement | null
+    const container = document.querySelector('main')
+      ?? document.querySelector('article')
+      ?? document.querySelector('[role="main"]')
       ?? document.body
 
     containerRef.current = container
@@ -334,10 +335,10 @@ export function VisualEditorListener() {
 
     const onMouseOver = (event: MouseEvent) => {
       const target = event.target
-      if (!target || !(target instanceof HTMLElement)) return
+      if (!target || !(target instanceof HTMLElement)) {return}
 
-      const fieldEl = target.closest(`[${FIELD_ATTR}]`) as HTMLElement | null
-      if (fieldEl === hoveredField) return
+      const fieldEl = target.closest(`[${FIELD_ATTR}]`)
+      if (fieldEl === hoveredField) {return}
 
       if (hoveredField) {
         hoveredField.classList.remove(HOVER_CLASS)
@@ -351,10 +352,10 @@ export function VisualEditorListener() {
     }
 
     const onMouseOut = (event: MouseEvent) => {
-      if (!hoveredField) return
+      if (!hoveredField) {return}
 
       const related = event.relatedTarget
-      if (related instanceof Node && hoveredField.contains(related)) return
+      if (related instanceof Node && hoveredField.contains(related)) {return}
 
       hoveredField.classList.remove(HOVER_CLASS)
       hoveredField = null
@@ -365,10 +366,10 @@ export function VisualEditorListener() {
 
     const onSelectionChange = () => {
       const sel = document.getSelection()
-      if (!sel || sel.rangeCount === 0) return
+      if (!sel || sel.rangeCount === 0) {return}
 
       const anchor = sel.anchorNode
-      if (!anchor) return
+      if (!anchor) {return}
 
       const el = anchor instanceof HTMLElement
         ? anchor.closest(`[${FIELD_ATTR}]`)
@@ -401,7 +402,7 @@ export function VisualEditorListener() {
       // Update document data
       const fieldDescriptor = fieldDescriptorsRef.current.find((f) => f.path === path)
       const fieldType = fieldDescriptor?.type ?? 'text'
-      let value: string | number = currentText
+      let value: number | string = currentText
 
       if (fieldType === 'number') {
         const parsed = Number(currentText)
@@ -417,9 +418,9 @@ export function VisualEditorListener() {
       const target = window.opener || window.parent
       target?.postMessage(
         {
+          type: VISUAL_EDITOR_UPDATE_TYPE,
           path,
           saveDraft: true,
-          type: VISUAL_EDITOR_UPDATE_TYPE,
           value,
         },
         window.location.origin,
@@ -427,7 +428,7 @@ export function VisualEditorListener() {
     }
 
     // Debounced commit on input
-    let inputTimer: ReturnType<typeof setTimeout> | null = null
+    let inputTimer: null | ReturnType<typeof setTimeout> = null
 
     const onInput = () => {
       if (inputTimer) {

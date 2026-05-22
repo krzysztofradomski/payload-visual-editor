@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { FieldValueEntry } from './documentValues.js'
+
 import {
   buildMatchableSegments,
   buildTextLookup,
@@ -23,14 +24,14 @@ describe('textMatch', () => {
 
   describe('buildMatchableSegments', () => {
     it('returns empty array for blank display values', () => {
-      expect(buildMatchableSegments({ path: 'x', type: 'text', displayValue: '   ' })).toEqual([])
+      expect(buildMatchableSegments({ type: 'text', displayValue: '   ', path: 'x' })).toEqual([])
     })
 
     it('adds only the full string for plain text fields', () => {
       const segments = buildMatchableSegments({
-        path: 'title',
         type: 'text',
         displayValue: 'First. Second.',
+        path: 'title',
       })
 
       expect(segments).toEqual(['First. Second.'])
@@ -38,9 +39,9 @@ describe('textMatch', () => {
 
     it('creates richText paragraph and sentence segments', () => {
       const entry: FieldValueEntry = {
-        path: 'richContent',
         type: 'richText',
         displayValue: 'First paragraph. Second sentence.\n\nAnother paragraph.',
+        path: 'richContent',
       }
 
       const segments = buildMatchableSegments(entry)
@@ -52,9 +53,9 @@ describe('textMatch', () => {
 
     it('creates textarea sentence segments after whitespace normalization', () => {
       const segments = buildMatchableSegments({
-        path: 'body',
         type: 'textarea',
         displayValue: 'First line. Second line.',
+        path: 'body',
       })
 
       expect(segments).toContain('First line.')
@@ -63,9 +64,9 @@ describe('textMatch', () => {
 
     it('skips segments shorter than two characters', () => {
       const segments = buildMatchableSegments({
-        path: 'x',
         type: 'richText',
         displayValue: 'A\n\nB',
+        path: 'x',
       })
 
       expect(segments).not.toContain('A')
@@ -76,7 +77,7 @@ describe('textMatch', () => {
   describe('buildTextLookup', () => {
     it('indexes entries by normalized segment text', () => {
       const entries: FieldValueEntry[] = [
-        { path: 'title', type: 'text', displayValue: 'Wybrzeże Sztuki powraca' },
+        { type: 'text', displayValue: 'Wybrzeże Sztuki powraca', path: 'title' },
       ]
 
       const lookup = buildTextLookup(entries)
@@ -87,8 +88,8 @@ describe('textMatch', () => {
 
     it('stores multiple entries under the same segment key', () => {
       const entries: FieldValueEntry[] = [
-        { path: 'a', type: 'text', displayValue: 'Hello' },
-        { path: 'b', type: 'text', displayValue: 'Hello' },
+        { type: 'text', displayValue: 'Hello', path: 'a' },
+        { type: 'text', displayValue: 'Hello', path: 'b' },
       ]
 
       const lookup = buildTextLookup(entries)

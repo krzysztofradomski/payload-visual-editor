@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { collectEditableFields } from './collectEditableFields.js'
 import { DEFAULT_EDITABLE_FIELD_TYPES } from '../types.js'
+import { collectEditableFields } from './collectEditableFields.js'
 
 describe('collectEditableFields', () => {
   it('collects nested fields inside groups and tabs', () => {
@@ -29,9 +29,9 @@ describe('collectEditableFields', () => {
     )
 
     expect(fields).toEqual([
-      { path: 'heroTitle', type: 'text' },
-      { path: 'heroBody', type: 'textarea' },
-      { path: 'meta.count', type: 'number' },
+      { type: 'text', path: 'heroTitle' },
+      { type: 'textarea', path: 'heroBody' },
+      { type: 'number', path: 'meta.count' },
     ])
   })
 
@@ -47,7 +47,7 @@ describe('collectEditableFields', () => {
       DEFAULT_EDITABLE_FIELD_TYPES,
     )
 
-    expect(fields).toEqual([{ path: 'sections.heading', type: 'text' }])
+    expect(fields).toEqual([{ type: 'text', path: 'sections.heading' }])
   })
 
   it('respects a custom allowed field type list', () => {
@@ -59,7 +59,7 @@ describe('collectEditableFields', () => {
       ['text'],
     )
 
-    expect(fields).toEqual([{ path: 'title', type: 'text' }])
+    expect(fields).toEqual([{ type: 'text', path: 'title' }])
   })
 
   it('collects unnamed nested containers', () => {
@@ -73,6 +73,6 @@ describe('collectEditableFields', () => {
       DEFAULT_EDITABLE_FIELD_TYPES,
     )
 
-    expect(fields).toEqual([{ path: 'subtitle', type: 'textarea' }])
+    expect(fields).toEqual([{ type: 'textarea', path: 'subtitle' }])
   })
 })

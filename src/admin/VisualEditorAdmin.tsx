@@ -5,11 +5,12 @@ import {
   useConfig,
   useDocumentForm,
   useDocumentInfo,
-  useLocale,
+  useLivePreviewContext, useLocale 
 } from '@payloadcms/ui'
-import { useLivePreviewContext } from '@payloadcms/ui'
 import { formatAdminURL } from 'payload/shared'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import type { EditableFieldDescriptor } from '../types.js'
 
 import {
   isVisualEditorUpdateMessage,
@@ -17,12 +18,11 @@ import {
   VISUAL_EDITOR_SYNC_FIELDS_TYPE,
 } from '../lib/messages.js'
 import { coerceVisualEditorValue } from '../lib/richText.js'
-import type { EditableFieldDescriptor } from '../types.js'
 
 export const VisualEditorAdmin = () => {
   const { config } = useConfig()
-  const { submit, dispatchFields, setModified } = useDocumentForm()
-  const { collectionSlug, globalSlug, id, setUnpublishedVersionCount } = useDocumentInfo()
+  const { dispatchFields, setModified, submit } = useDocumentForm()
+  const { id, collectionSlug, globalSlug, setUnpublishedVersionCount } = useDocumentInfo()
   const { code: locale } = useLocale()
   const [formState] = useAllFormFields()
   const {
@@ -38,7 +38,7 @@ export const VisualEditorAdmin = () => {
   const allowedPathsRef = useRef<Set<string>>(new Set())
   const fieldTypesRef = useRef<Map<string, string>>(new Map())
   const fieldsRef = useRef<EditableFieldDescriptor[]>([])
-  const saveDraftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const saveDraftTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(null)
   const hasPendingDraftSaveRef = useRef(false)
 
   const isEnabledCollection = useMemo(() => Boolean(collectionSlug), [collectionSlug])
@@ -66,9 +66,9 @@ export const VisualEditorAdmin = () => {
       }
 
       postToPreview({
+        type: VISUAL_EDITOR_SYNC_FIELDS_TYPE,
         collectionSlug,
         fields,
-        type: VISUAL_EDITOR_SYNC_FIELDS_TYPE,
       })
     },
     [collectionSlug, postToPreview],
@@ -81,9 +81,9 @@ export const VisualEditorAdmin = () => {
       }
 
       postToPreview({
+        type: VISUAL_EDITOR_SET_MODE_TYPE,
         collectionSlug,
         enabled,
-        type: VISUAL_EDITOR_SET_MODE_TYPE,
       })
 
       if (enabled && fieldsRef.current.length > 0) {
@@ -213,7 +213,7 @@ export const VisualEditorAdmin = () => {
         return
       }
 
-      const { originalSegment, path, value, saveDraft: shouldSaveDraft = true } = event.data
+      const { originalSegment, path, saveDraft: shouldSaveDraft = true, value } = event.data
 
       if (!allowedPathsRef.current.has(path)) {
         return
@@ -230,8 +230,8 @@ export const VisualEditorAdmin = () => {
       )
 
       dispatchFields({
-        path,
         type: 'UPDATE',
+        path,
         value: coercedValue,
       })
       setModified(true)
@@ -271,12 +271,12 @@ export const VisualEditorAdmin = () => {
   return (
     <>
       <button
-        type="button"
+        aria-pressed={editMode}
         className="btn btn--icon-style-without-border btn--size-medium btn--style-secondary payload-visual-editor-toggle"
         data-payload-visual-editor-ui
-        aria-pressed={editMode}
-        title={editMode ? 'Exit visual edit mode' : 'Edit page text in preview'}
         onClick={handleEditToggle}
+        title={editMode ? 'Exit visual edit mode' : 'Edit page text in preview'}
+        type="button"
       >
         {editMode ? 'Done' : 'Edit'}
       </button>
@@ -284,7 +284,7 @@ export const VisualEditorAdmin = () => {
         <span
           className="payload-visual-editor-hint"
           data-payload-visual-editor-ui
-          style={{ alignSelf: 'center', fontSize: '12px', opacity: 0.75, marginLeft: '0.5rem' }}
+          style={{ alignSelf: 'center', fontSize: '12px', marginLeft: '0.5rem', opacity: 0.75 }}
         >
           Click text in preview to edit
         </span>

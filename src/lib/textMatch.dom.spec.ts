@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { FieldValueEntry } from './documentValues.js'
+
 import {
   buildTextLookup,
   expandRangeToWord,
@@ -21,7 +22,7 @@ function entry(
   displayValue: string,
   type: FieldValueEntry['type'] = 'text',
 ): FieldValueEntry {
-  return { path, type, displayValue }
+  return { type, displayValue, path }
 }
 
 function textEl(
@@ -180,7 +181,7 @@ describe('textMatch (DOM)', () => {
 
       const span = wrapRangeWithSpan(range, 'highlight', { 'data-test': '1' })
       expect(span.textContent).toBe('Hello')
-      expect(span.getAttribute('data-test')).toBe('1')
+      expect(span).toHaveAttribute('data-test', '1')
 
       unwrapSpan(span)
       expect(p.textContent).toBe('Hello world')

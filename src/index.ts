@@ -20,12 +20,12 @@ const pluginState: VisualEditorPluginState = {
   editableFieldTypes: DEFAULT_EDITABLE_FIELD_TYPES,
 }
 
-function isCollectionEnabled(config: VisualEditorCollectionConfig | undefined): boolean {
+function isCollectionEnabled(config: undefined | VisualEditorCollectionConfig): boolean {
   return config === true || (typeof config === 'object' && config !== null)
 }
 
 /** Import map path for the admin Edit/Done control (live preview toolbar). */
-export const VISUAL_EDITOR_ADMIN_PATH = 'payload-visual-editor/client#VisualEditorAdmin' as const
+export const VISUAL_EDITOR_ADMIN_PATH = 'payload-visual-editor/client#VisualEditorAdmin'
 
 function enableCollectionVisualEditor(
   collection: NonNullable<Config['collections']>[number],
@@ -62,7 +62,7 @@ export const payloadVisualEditor =
     pluginState.editableFieldTypes = editableFieldTypes
     pluginState.collections = new Map(
       Object.entries(pluginOptions.collections ?? {}).flatMap(([slug, config]) =>
-        isCollectionEnabled(config) ? [[slug, config as VisualEditorCollectionConfig]] : [],
+        isCollectionEnabled(config) ? [[slug, config]] : [],
       ),
     )
 

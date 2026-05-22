@@ -7,7 +7,7 @@ import { buildTextLookup } from '../lib/textMatch.js'
 import { stampFieldElements } from './VisualEditorListener.js'
 
 function entry(path: string, displayValue: string, type: FieldValueEntry['type'] = 'text'): FieldValueEntry {
-  return { displayValue, path, type }
+  return { type, displayValue, path }
 }
 
 describe('VisualEditorListener stamping', () => {
@@ -41,8 +41,8 @@ describe('VisualEditorListener stamping', () => {
     const stamped = stampFieldElements(article, lookup)
 
     expect(stamped.get('content')).toBe(content)
-    expect(content.getAttribute('data-ve-path')).toBe('content')
-    expect(p1.hasAttribute('data-ve-path')).toBe(false)
-    expect(p2.hasAttribute('data-ve-path')).toBe(false)
+    expect(content).toHaveAttribute('data-ve-path', 'content')
+    expect(p1).not.toHaveAttribute('data-ve-path')
+    expect(p2).not.toHaveAttribute('data-ve-path')
   })
 })

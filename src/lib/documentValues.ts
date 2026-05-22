@@ -1,5 +1,6 @@
-import { lexicalToPlainText } from './richText.js'
 import type { EditableFieldDescriptor } from '../types.js'
+
+import { lexicalToPlainText } from './richText.js'
 
 export type FieldValueEntry = {
   displayValue: string
@@ -17,7 +18,7 @@ export function setValueAtPath(
   let current: Record<string, unknown> = next
 
   for (let index = 0; index < segments.length - 1; index += 1) {
-    const segment = segments[index]!
+    const segment = segments[index]
     const existing = current[segment]
 
     if (existing == null || typeof existing !== 'object' || Array.isArray(existing)) {
@@ -29,7 +30,7 @@ export function setValueAtPath(
     current = current[segment] as Record<string, unknown>
   }
 
-  current[segments[segments.length - 1]!] = value
+  current[segments[segments.length - 1]] = value
 
   return next
 }
@@ -52,7 +53,7 @@ export function getValueAtPath(data: Record<string, unknown>, path: string): unk
 export function valueToDisplayString(
   value: unknown,
   type: EditableFieldDescriptor['type'],
-): string | null {
+): null | string {
   if (value == null) {
     return null
   }
@@ -89,9 +90,9 @@ export function buildFieldValueEntries(
     }
 
     entries.push({
+      type: field.type,
       displayValue,
       path: field.path,
-      type: field.type,
     })
   }
 

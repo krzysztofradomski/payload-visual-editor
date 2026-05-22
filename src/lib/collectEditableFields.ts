@@ -1,6 +1,7 @@
 import type { Field } from 'payload'
 
 import type { EditableFieldDescriptor, EditableFieldType } from '../types.js'
+
 import { isEditableFieldType } from '../types.js'
 
 const NESTED_FIELD_TYPES = new Set([
@@ -37,8 +38,8 @@ export function collectEditableFields(
 
       if (isEditableFieldType(field.type, allowedTypes)) {
         result.push({
-          path,
           type: field.type,
+          path,
         })
       }
 

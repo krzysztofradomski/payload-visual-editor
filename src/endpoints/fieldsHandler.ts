@@ -1,12 +1,12 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
-import { collectEditableFields } from '../lib/collectEditableFields.js'
 import type {
   EditableFieldDescriptor,
   EditableFieldType,
-  VisualEditorCollectionConfig,
+  VisualEditorCollectionConfig, VisualEditorFieldsResponse 
 } from '../types.js'
-import type { VisualEditorFieldsResponse } from '../types.js'
+
+import { collectEditableFields } from '../lib/collectEditableFields.js'
 
 export type VisualEditorPluginState = {
   collections: Map<string, VisualEditorCollectionConfig>
@@ -40,8 +40,6 @@ export function createFieldsEndpoint(
   pluginState: VisualEditorPluginState,
 ): Endpoint {
   return {
-    method: 'get',
-    path: '/visual-editor/fields',
     handler: async (req: PayloadRequest) => {
       const collection = req.query?.collection
 
@@ -76,5 +74,7 @@ export function createFieldsEndpoint(
 
       return Response.json(body)
     },
+    method: 'get',
+    path: '/visual-editor/fields',
   }
 }

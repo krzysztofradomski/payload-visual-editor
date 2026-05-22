@@ -1,7 +1,7 @@
 type LexicalNode = {
+  children?: LexicalNode[]
   text?: string
   type?: string
-  children?: LexicalNode[]
 }
 
 export function lexicalToPlainText(value: unknown): string {
@@ -74,7 +74,7 @@ export function replaceFirstInsensitive(source: string, search: string, replacem
 
 export function coerceVisualEditorValue(
   fieldType: string,
-  value: string | number,
+  value: number | string,
   currentValue: unknown,
   originalSegment?: string,
 ): unknown {
@@ -102,7 +102,7 @@ export function coerceVisualEditorValue(
       return currentValue
     }
 
-    if (currentValue && typeof currentValue === 'object' && 'root' in (currentValue as object)) {
+    if (currentValue && typeof currentValue === 'object' && 'root' in (currentValue)) {
       const currentPlain = lexicalToPlainText(currentValue)
       const segment = originalSegment?.trim()
 

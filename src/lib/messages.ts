@@ -1,15 +1,15 @@
 import type { EditableFieldDescriptor } from '../types.js'
 
-export const VISUAL_EDITOR_UPDATE_TYPE = 'payload-visual-editor-update' as const
-export const VISUAL_EDITOR_SET_MODE_TYPE = 'payload-visual-editor-set-mode' as const
-export const VISUAL_EDITOR_SYNC_FIELDS_TYPE = 'payload-visual-editor-sync-fields' as const
+export const VISUAL_EDITOR_UPDATE_TYPE = 'payload-visual-editor-update'
+export const VISUAL_EDITOR_SET_MODE_TYPE = 'payload-visual-editor-set-mode'
+export const VISUAL_EDITOR_SYNC_FIELDS_TYPE = 'payload-visual-editor-sync-fields'
 
 export type VisualEditorUpdatePayload = {
   originalSegment?: string
   path: string
   saveDraft?: boolean
   type: typeof VISUAL_EDITOR_UPDATE_TYPE
-  value: string | number
+  value: number | string
 }
 
 export type VisualEditorSetModePayload = {

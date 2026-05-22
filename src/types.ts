@@ -10,24 +10,24 @@ export const DEFAULT_EDITABLE_FIELD_TYPES = [
 export type EditableFieldType = (typeof DEFAULT_EDITABLE_FIELD_TYPES)[number]
 
 export type VisualEditorCollectionConfig =
-  | true
   | {
-      /** Only these field paths are editable in live preview. */
-      fields?: string[]
       /** Field paths excluded from visual editing (e.g. slug). */
       excludeFields?: string[]
+      /** Only these field paths are editable in live preview. */
+      fields?: string[]
     }
+  | true
 
 export type PayloadVisualEditorConfig = {
   /**
    * Collections that support inline visual editing in live preview.
    */
   collections?: Record<string, VisualEditorCollectionConfig>
+  disabled?: boolean
   /**
    * Field types that can be edited visually. Defaults to text, textarea, number, and richText.
    */
   editableFieldTypes?: EditableFieldType[]
-  disabled?: boolean
 }
 
 export type EditableFieldDescriptor = {
@@ -38,7 +38,7 @@ export type EditableFieldDescriptor = {
 export type VisualEditorUpdateMessage = {
   path: string
   type: 'payload-visual-editor-update'
-  value: string | number
+  value: number | string
 }
 
 export type VisualEditorFieldsResponse = {

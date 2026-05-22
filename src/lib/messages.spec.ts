@@ -14,16 +14,16 @@ describe('messages', () => {
     it('accepts valid update payloads', () => {
       expect(
         isVisualEditorUpdateMessage({
-          path: 'title',
           type: VISUAL_EDITOR_UPDATE_TYPE,
+          path: 'title',
           value: 'Hello',
         }),
       ).toBe(true)
 
       expect(
         isVisualEditorUpdateMessage({
-          path: 'views',
           type: VISUAL_EDITOR_UPDATE_TYPE,
+          path: 'views',
           value: 42,
         }),
       ).toBe(true)
@@ -34,15 +34,15 @@ describe('messages', () => {
       expect(isVisualEditorUpdateMessage({ type: VISUAL_EDITOR_UPDATE_TYPE })).toBe(false)
       expect(
         isVisualEditorUpdateMessage({
-          path: 'title',
           type: VISUAL_EDITOR_UPDATE_TYPE,
+          path: 'title',
           value: true,
         }),
       ).toBe(false)
       expect(
         isVisualEditorUpdateMessage({
-          path: 1,
           type: VISUAL_EDITOR_UPDATE_TYPE,
+          path: 1,
           value: 'x',
         }),
       ).toBe(false)
@@ -53,16 +53,16 @@ describe('messages', () => {
     it('accepts valid set-mode payloads', () => {
       expect(
         isVisualEditorSetModeMessage({
-          enabled: true,
           type: VISUAL_EDITOR_SET_MODE_TYPE,
+          enabled: true,
         }),
       ).toBe(true)
 
       expect(
         isVisualEditorSetModeMessage({
+          type: VISUAL_EDITOR_SET_MODE_TYPE,
           collectionSlug: 'posts',
           enabled: false,
-          type: VISUAL_EDITOR_SET_MODE_TYPE,
         }),
       ).toBe(true)
     })
@@ -71,8 +71,8 @@ describe('messages', () => {
       expect(isVisualEditorSetModeMessage(undefined)).toBe(false)
       expect(
         isVisualEditorSetModeMessage({
-          enabled: 'yes',
           type: VISUAL_EDITOR_SET_MODE_TYPE,
+          enabled: 'yes',
         }),
       ).toBe(false)
     })
@@ -82,9 +82,9 @@ describe('messages', () => {
     it('accepts valid sync-fields payloads', () => {
       expect(
         isVisualEditorSyncFieldsMessage({
-          collectionSlug: 'posts',
-          fields: [{ path: 'title', type: 'text' }],
           type: VISUAL_EDITOR_SYNC_FIELDS_TYPE,
+          collectionSlug: 'posts',
+          fields: [{ type: 'text', path: 'title' }],
         }),
       ).toBe(true)
     })
@@ -93,9 +93,9 @@ describe('messages', () => {
       expect(isVisualEditorSyncFieldsMessage({})).toBe(false)
       expect(
         isVisualEditorSyncFieldsMessage({
+          type: VISUAL_EDITOR_SYNC_FIELDS_TYPE,
           collectionSlug: 'posts',
           fields: 'title',
-          type: VISUAL_EDITOR_SYNC_FIELDS_TYPE,
         }),
       ).toBe(false)
     })

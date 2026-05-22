@@ -90,11 +90,11 @@ function pickCandidate(
   candidates: FieldValueEntry[],
 ): FieldValueEntry {
   if (candidates.length === 1) {
-    return candidates[0]!
+    return candidates[0]
   }
 
   const occurrence = getOccurrenceIndex(element, normalized)
-  return candidates[occurrence] ?? candidates[candidates.length - 1]!
+  return candidates[occurrence] ?? candidates[candidates.length - 1]
 }
 
 function resolveLooseFieldForElement(
@@ -102,7 +102,7 @@ function resolveLooseFieldForElement(
   lookup: Map<string, FieldValueEntry[]>,
   normalized: string,
 ): FieldValueEntry | null {
-  let bestKey: string | null = null
+  let bestKey: null | string = null
 
   for (const key of lookup.keys()) {
     if (key.length < MIN_SEGMENT_LENGTH) {
@@ -229,7 +229,7 @@ export function findFieldContextFromTarget(
 
 const WORD_CHAR_PATTERN = /[\p{L}\p{N}'’-]/u
 
-export function caretRangeFromPoint(x: number, y: number): Range | null {
+export function caretRangeFromPoint(x: number, y: number): null | Range {
   if (typeof document.caretRangeFromPoint === 'function') {
     return document.caretRangeFromPoint(x, y)
   }
@@ -247,7 +247,7 @@ export function caretRangeFromPoint(x: number, y: number): Range | null {
   return range
 }
 
-export function expandRangeToWord(range: Range): Range | null {
+export function expandRangeToWord(range: Range): null | Range {
   const { startContainer, startOffset } = range
 
   if (startContainer.nodeType !== Node.TEXT_NODE) {
@@ -277,7 +277,7 @@ export function expandRangeToWord(range: Range): Range | null {
   return wordRange
 }
 
-export function getWordRangeAtPoint(x: number, y: number): Range | null {
+export function getWordRangeAtPoint(x: number, y: number): null | Range {
   const caret = caretRangeFromPoint(x, y)
 
   if (!caret) {
@@ -331,7 +331,7 @@ export function findWordTargetAtPoint(
   clientX: number,
   clientY: number,
   lookup: Map<string, FieldValueEntry[]>,
-): WordTarget | null {
+): null | WordTarget {
   const context = findFieldContextFromTarget(target, lookup)
 
   if (!context) {
