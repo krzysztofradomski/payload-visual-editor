@@ -1,0 +1,34 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: review-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Gemini AI Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gemini Code Review
+        uses: sshnaidm/gemini-code-review-action@v1
+        with:
+          gemini-key: ${{ secrets.GEMINI_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          model: 'gemini-2.5-flash'
+          prompt: 'Review the code changes for performance, security, and best practices. Focus on Payload CMS patterns if applicable. Summarize the review with a confidence score in percent, and add a REVIEW PASSED or REVIEW FAILED word at the very end of the summary.'
