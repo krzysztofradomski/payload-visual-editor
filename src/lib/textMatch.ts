@@ -11,7 +11,7 @@ export function normalizeTextForMatch(value: string): string {
 }
 
 const SKIP_ANCESTOR_SELECTOR =
-  'script, style, noscript, svg, [data-payload-visual-editor-ui], .payload-visual-editor-toggle'
+  'script, style, noscript, svg, [data-payload-plugin-visual-editor-ui], .payload-plugin-visual-editor-toggle'
 
 export function buildMatchableSegments(entry: FieldValueEntry): string[] {
   const segments = new Set<string>()
@@ -287,7 +287,11 @@ export function getWordRangeAtPoint(x: number, y: number): null | Range {
   return expandRangeToWord(caret)
 }
 
-export function wrapRangeWithSpan(range: Range, className: string, attributes?: Record<string, string>) {
+export function wrapRangeWithSpan(
+  range: Range,
+  className: string,
+  attributes?: Record<string, string>,
+) {
   const span = document.createElement('span')
   span.className = className
 
@@ -350,10 +354,7 @@ export function findWordTargetAtPoint(
 
   const ancestor = wordRange.commonAncestorContainer
 
-  if (
-    ancestor !== context.blockElement &&
-    !context.blockElement.contains(ancestor)
-  ) {
+  if (ancestor !== context.blockElement && !context.blockElement.contains(ancestor)) {
     return null
   }
 

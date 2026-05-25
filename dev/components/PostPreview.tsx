@@ -1,7 +1,7 @@
 'use client'
 
 import { subscribe, unsubscribe } from '@payloadcms/live-preview'
-import { useVisualEditorEditMode, useVisualEditorMode } from 'payload-visual-editor/client'
+import { useVisualEditorEditMode, useVisualEditorMode } from 'payload-plugin-visual-editor/client'
 import { useEffect, useRef, useState } from 'react'
 
 import { formatPostMeta, renderRichText } from '../lib/renderPost.js'

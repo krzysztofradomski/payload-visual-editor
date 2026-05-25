@@ -7,7 +7,7 @@ import { DEFAULT_EDITABLE_FIELD_TYPES } from '../src/types.js'
 
 let payload: Awaited<ReturnType<typeof getPayload>>
 
-describe('payload-visual-editor', () => {
+describe('payload-plugin-visual-editor', () => {
   beforeAll(async () => {
     payload = await getPayload({ config })
   })
@@ -31,9 +31,7 @@ describe('payload-visual-editor', () => {
   })
 
   it('registers the visual editor fields endpoint on enabled collections', async () => {
-    const endpoint = payload.config.endpoints?.find(
-      (item) => item.path === '/visual-editor/fields',
-    )
+    const endpoint = payload.config.endpoints?.find((item) => item.path === '/visual-editor/fields')
 
     expect(endpoint).toBeDefined()
     expect(endpoint?.method).toBe('get')

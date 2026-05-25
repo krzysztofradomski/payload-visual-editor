@@ -26,11 +26,7 @@ function entry(
   return { type, displayValue, path }
 }
 
-function textEl(
-  tag: string,
-  text: string,
-  attrs: Record<string, string> = {},
-): HTMLElement {
+function textEl(tag: string, text: string, attrs: Record<string, string> = {}): HTMLElement {
   const el = document.createElement(tag)
   for (const [name, value] of Object.entries(attrs)) {
     el.setAttribute(name, value)
@@ -68,7 +64,7 @@ describe('textMatch (DOM)', () => {
     it('returns null inside skipped UI ancestors', () => {
       const btn = textEl('span', 'Edit', { id: 'btn' })
       const button = document.createElement('button')
-      button.setAttribute('data-payload-visual-editor-ui', '')
+      button.setAttribute('data-payload-plugin-visual-editor-ui', '')
       button.appendChild(btn)
       mount(button)
       const lookup = buildTextLookup([entry('btn', 'Edit')])
@@ -91,10 +87,7 @@ describe('textMatch (DOM)', () => {
       const wrap = textEl('section', '', { id: 'wrap' })
       wrap.append(document.createTextNode('Parent '), child)
       mount(wrap)
-      const lookup = buildTextLookup([
-        entry('wrap', 'Parent Child'),
-        entry('child', 'Child'),
-      ])
+      const lookup = buildTextLookup([entry('wrap', 'Parent Child'), entry('child', 'Child')])
 
       expect(isLeafFieldBlock(wrap, lookup, entry('wrap', 'Parent Child'))).toBe(false)
     })

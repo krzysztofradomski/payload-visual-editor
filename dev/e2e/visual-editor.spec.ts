@@ -44,7 +44,7 @@ test.describe('visual editor', () => {
     await enableLivePreview(page)
     await waitForPreviewContent(page)
 
-    const editButton = page.locator('.payload-visual-editor-toggle')
+    const editButton = page.locator('.payload-plugin-visual-editor-toggle')
     await expect(editButton).toBeVisible()
     await expect(editButton).toHaveText('Edit')
   })

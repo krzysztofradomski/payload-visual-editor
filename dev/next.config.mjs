@@ -6,11 +6,11 @@ const dirname = path.dirname(fileURLToPath(import.meta.url))
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['payload-visual-editor'],
+  transpilePackages: ['payload-plugin-visual-editor'],
   webpack: (webpackConfig) => {
     webpackConfig.module.rules.push({
       test: /\.m?js$/,
-      include: /payload-visual-editor/,
+      include: /payload-plugin-visual-editor/,
       resolve: { fullySpecified: false },
     })
 

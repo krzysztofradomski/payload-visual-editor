@@ -1,5 +1,6 @@
-import { VisualEditorListener } from 'payload-visual-editor/client'
 import type { ReactNode } from 'react'
+
+import { VisualEditorListener } from 'payload-plugin-visual-editor/client'
 
 import './globals.css'
 

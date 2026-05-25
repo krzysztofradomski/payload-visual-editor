@@ -37,7 +37,7 @@ export type EditableFieldDescriptor = {
 
 export type VisualEditorUpdateMessage = {
   path: string
-  type: 'payload-visual-editor-update'
+  type: 'payload-plugin-visual-editor-update'
   value: number | string
 }
 

@@ -24,17 +24,17 @@ import {
 import { useVisualEditorMode } from './useVisualEditorMode.js'
 
 const MIN_FIELD_LENGTH = 2
-const HOVER_CLASS = 'payload-visual-editor-hover'
-const EDITING_CLASS = 'payload-visual-editor-editing'
+const HOVER_CLASS = 'payload-plugin-visual-editor-hover'
+const EDITING_CLASS = 'payload-plugin-visual-editor-editing'
 const FIELD_ATTR = 'data-ve-path'
 
 function injectStyles() {
-  if (document.getElementById('payload-visual-editor-styles')) {
+  if (document.getElementById('payload-plugin-visual-editor-styles')) {
     return
   }
 
   const style = document.createElement('style')
-  style.id = 'payload-visual-editor-styles'
+  style.id = 'payload-plugin-visual-editor-styles'
   style.textContent = `
 [${FIELD_ATTR}] { transition: outline 0.15s ease; }
 .${HOVER_CLASS} { outline: 2px dashed rgba(0,112,243,0.5); outline-offset: 3px; cursor: text; border-radius: 2px; }

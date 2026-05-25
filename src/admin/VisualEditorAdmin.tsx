@@ -5,7 +5,8 @@ import {
   useConfig,
   useDocumentForm,
   useDocumentInfo,
-  useLivePreviewContext, useLocale 
+  useLivePreviewContext,
+  useLocale,
 } from '@payloadcms/ui'
 import { formatAdminURL } from 'payload/shared'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -164,7 +165,15 @@ export const VisualEditorAdmin = () => {
     })
 
     setUnpublishedVersionCount((count) => count + 1)
-  }, [collectionSlug, config.routes.api, globalSlug, id, locale, setUnpublishedVersionCount, submit])
+  }, [
+    collectionSlug,
+    config.routes.api,
+    globalSlug,
+    id,
+    locale,
+    setUnpublishedVersionCount,
+    submit,
+  ])
 
   const flushSaveDraft = useCallback(() => {
     if (!hasPendingDraftSaveRef.current) {
@@ -222,12 +231,7 @@ export const VisualEditorAdmin = () => {
       const fieldType = fieldTypesRef.current.get(path) ?? 'text'
       const currentValue = formState?.[path]?.value
 
-      const coercedValue = coerceVisualEditorValue(
-        fieldType,
-        value,
-        currentValue,
-        originalSegment,
-      )
+      const coercedValue = coerceVisualEditorValue(fieldType, value, currentValue, originalSegment)
 
       dispatchFields({
         type: 'UPDATE',
@@ -272,8 +276,8 @@ export const VisualEditorAdmin = () => {
     <>
       <button
         aria-pressed={editMode}
-        className="btn btn--icon-style-without-border btn--size-medium btn--style-secondary payload-visual-editor-toggle"
-        data-payload-visual-editor-ui
+        className="btn btn--icon-style-without-border btn--size-medium btn--style-secondary payload-plugin-visual-editor-toggle"
+        data-payload-plugin-visual-editor-ui
         onClick={handleEditToggle}
         title={editMode ? 'Exit visual edit mode' : 'Edit page text in preview'}
         type="button"
@@ -282,8 +286,8 @@ export const VisualEditorAdmin = () => {
       </button>
       {editMode && (
         <span
-          className="payload-visual-editor-hint"
-          data-payload-visual-editor-ui
+          className="payload-plugin-visual-editor-hint"
+          data-payload-plugin-visual-editor-ui
           style={{ alignSelf: 'center', fontSize: '12px', marginLeft: '0.5rem', opacity: 0.75 }}
         >
           Click text in preview to edit

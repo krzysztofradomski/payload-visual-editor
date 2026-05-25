@@ -1,4 +1,4 @@
-.payload-visual-editor-controls {
+.payload-plugin-visual-editor-controls {
   position: fixed;
   right: 1rem;
   bottom: 1rem;
@@ -10,11 +10,11 @@
   pointer-events: none;
 }
 
-.payload-visual-editor-controls > * {
+.payload-plugin-visual-editor-controls > * {
   pointer-events: auto;
 }
 
-.payload-visual-editor-hint-sticky {
+.payload-plugin-visual-editor-hint-sticky {
   max-width: 14rem;
   padding: 0.4rem 0.65rem;
   border-radius: 8px;
@@ -27,7 +27,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
-.payload-visual-editor-toggle {
+.payload-plugin-visual-editor-toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -44,35 +44,35 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
-.payload-visual-editor-toggle[aria-pressed='true'] {
+.payload-plugin-visual-editor-toggle[aria-pressed='true'] {
   background: #0070f3;
 }
 
-.payload-visual-editor-toggle svg {
+.payload-plugin-visual-editor-toggle svg {
   width: 16px;
   height: 16px;
   fill: currentColor;
 }
 
 /* Edit-mode container */
-.payload-visual-editor-editing {
+.payload-plugin-visual-editor-editing {
   outline: none;
   caret-color: #0070f3;
 }
 
-.payload-visual-editor-editing [data-ve-path] {
+.payload-plugin-visual-editor-editing [data-ve-path] {
   transition: outline 0.15s ease;
   border-radius: 2px;
 }
 
-.payload-visual-editor-editing [data-ve-path]:hover,
-.payload-visual-editor-hover {
+.payload-plugin-visual-editor-editing [data-ve-path]:hover,
+.payload-plugin-visual-editor-hover {
   outline: 2px dashed rgba(0, 112, 243, 0.5);
   outline-offset: 3px;
   cursor: text;
 }
 
-.payload-visual-editor-editing [data-ve-path].ve-active {
+.payload-plugin-visual-editor-editing [data-ve-path].ve-active {
   outline: 2px solid #0070f3;
   outline-offset: 3px;
 }

@@ -1,8 +1,8 @@
 import type { EditableFieldDescriptor } from '../types.js'
 
-export const VISUAL_EDITOR_UPDATE_TYPE = 'payload-visual-editor-update'
-export const VISUAL_EDITOR_SET_MODE_TYPE = 'payload-visual-editor-set-mode'
-export const VISUAL_EDITOR_SYNC_FIELDS_TYPE = 'payload-visual-editor-sync-fields'
+export const VISUAL_EDITOR_UPDATE_TYPE = 'payload-plugin-visual-editor-update'
+export const VISUAL_EDITOR_SET_MODE_TYPE = 'payload-plugin-visual-editor-set-mode'
+export const VISUAL_EDITOR_SYNC_FIELDS_TYPE = 'payload-plugin-visual-editor-sync-fields'
 
 export type VisualEditorUpdatePayload = {
   originalSegment?: string
@@ -24,9 +24,7 @@ export type VisualEditorSyncFieldsPayload = {
   type: typeof VISUAL_EDITOR_SYNC_FIELDS_TYPE
 }
 
-export function isVisualEditorUpdateMessage(
-  data: unknown,
-): data is VisualEditorUpdatePayload {
+export function isVisualEditorUpdateMessage(data: unknown): data is VisualEditorUpdatePayload {
   if (!data || typeof data !== 'object') {
     return false
   }
@@ -40,9 +38,7 @@ export function isVisualEditorUpdateMessage(
   )
 }
 
-export function isVisualEditorSetModeMessage(
-  data: unknown,
-): data is VisualEditorSetModePayload {
+export function isVisualEditorSetModeMessage(data: unknown): data is VisualEditorSetModePayload {
   if (!data || typeof data !== 'object') {
     return false
   }

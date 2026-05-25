@@ -40,7 +40,9 @@ export async function enableLivePreview(page: Page) {
   const toggler = page.locator('#live-preview-toggler')
   await expect(toggler).toBeVisible()
 
-  const isActive = await toggler.evaluate((el) => el.classList.contains('live-preview-toggler--active'))
+  const isActive = await toggler.evaluate((el) =>
+    el.classList.contains('live-preview-toggler--active'),
+  )
 
   if (!isActive) {
     await toggler.click()
@@ -61,16 +63,16 @@ export async function waitForPreviewContent(page: Page, title?: string) {
 }
 
 export async function enterVisualEditMode(page: Page) {
-  const editButton = page.locator('.payload-visual-editor-toggle')
+  const editButton = page.locator('.payload-plugin-visual-editor-toggle')
   await expect(editButton).toBeVisible()
   await expect(editButton).toHaveText('Edit')
   await editButton.click()
   await expect(editButton).toHaveText('Done')
-  await expect(page.locator('.payload-visual-editor-hint')).toBeVisible()
+  await expect(page.locator('.payload-plugin-visual-editor-hint')).toBeVisible()
 }
 
 export async function exitVisualEditMode(page: Page) {
-  const editButton = page.locator('.payload-visual-editor-toggle')
+  const editButton = page.locator('.payload-plugin-visual-editor-toggle')
   await editButton.click()
   await expect(editButton).toHaveText('Edit')
 }

@@ -1,6 +1,6 @@
 # Developing Payload CMS Plugins
 
-A practical guide for building, testing, and shipping Payload 3.x plugins. This repo (`payload-visual-editor`) follows the [official plugin template](https://github.com/payloadcms/payload/tree/3.x/templates/plugin) and includes worked examples from real development.
+A practical guide for building, testing, and shipping Payload 3.x plugins. This repo (`payload-plugin-visual-editor`) follows the [official plugin template](https://github.com/payloadcms/payload/tree/3.x/templates/plugin) and includes worked examples from real development.
 
 For API-level patterns (hooks, fields, access control), see `.agents/skills/payload/reference/PLUGIN-DEVELOPMENT.md`.
 
@@ -24,7 +24,7 @@ Copy `dev/.env.example` → `dev/.env` and set `PAYLOAD_SECRET`. `DATABASE_URL` 
 ## Repository layout
 
 ```
-payload-visual-editor/
+payload-plugin-visual-editor/
 ├── src/                    # Plugin source (published as dist/)
 │   ├── index.ts            # Plugin entry: payloadVisualEditor()
 │   ├── types.ts
@@ -33,8 +33,8 @@ payload-visual-editor/
 │   ├── endpoints/          # Custom API handlers
 │   ├── lib/                # Shared logic
 │   └── exports/
-│       ├── client.ts       # 'use client' exports → payload-visual-editor/client
-│       └── rsc.ts          # Server component exports → payload-visual-editor/rsc
+│       ├── client.ts       # 'use client' exports → payload-plugin-visual-editor/client
+│       └── rsc.ts          # Server component exports → payload-plugin-visual-editor/rsc
 ├── dev/                    # Full Payload + Next.js app for local development
 │   ├── payload.config.ts
 │   ├── app/                # Next.js App Router (admin + frontend + API)
@@ -48,13 +48,13 @@ payload-visual-editor/
 
 ### Key conventions
 
-| Concern | Pattern |
-| -------- | -------- |
-| Plugin shape | `(options) => (config) => Config` — curried function |
-| Published output | SWC compiles `src/` → `dist/`; only `dist/` is published |
-| Payload dependency | `peerDependencies.payload` — never bundle Payload |
-| Admin components | Register as `'package-name/client#ExportName'` in config |
-| Local consumption | `"payload-visual-editor": "link:."` in root `package.json` |
+| Concern             | Pattern                                                                         |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Plugin shape        | `(options) => (config) => Config` — curried function                            |
+| Published output    | SWC compiles `src/` → `dist/`; only `dist/` is published                        |
+| Payload dependency  | `peerDependencies.payload` — never bundle Payload                               |
+| Admin components    | Register as `'package-name/client#ExportName'` in config                        |
+| Local consumption   | `"payload-plugin-visual-editor": "link:."` in root `package.json`               |
 | CLI against dev app | `pnpm dev:payload <command>` sets `PAYLOAD_CONFIG_PATH=./dev/payload.config.ts` |
 
 ---
@@ -101,7 +101,7 @@ export const myPlugin =
 The dev config imports the plugin from the linked package:
 
 ```typescript
-import { payloadVisualEditor } from 'payload-visual-editor'
+import { payloadVisualEditor } from 'payload-plugin-visual-editor'
 
 export default buildConfig({
   plugins: [payloadVisualEditor({ collections: { posts: true } })],
@@ -147,11 +147,14 @@ The dev app uses `@payloadcms/next/withPayload` and transpiles the plugin packag
 
 ```javascript
 // dev/next.config.mjs
-export default withPayload({
-  transpilePackages: ['payload-visual-editor'],
-  serverExternalPackages: ['mongodb-memory-server'],
-  // webpack rule for fullySpecified: false on plugin ESM
-}, { devBundleServerPackages: false })
+export default withPayload(
+  {
+    transpilePackages: ['payload-plugin-visual-editor'],
+    serverExternalPackages: ['mongodb-memory-server'],
+    // webpack rule for fullySpecified: false on plugin ESM
+  },
+  { devBundleServerPackages: false },
+)
 ```
 
 Consumers of your plugin need `transpilePackages` (and often the webpack `fullySpecified` rule) in their own Next.js config.
@@ -207,22 +210,22 @@ MongoDB transactions require a replica set — use `MongoMemoryReplSet`, not a s
 
 Payload resolves admin React components through `dev/app/(payload)/admin/importMap.js`.
 
-| Symptom | Fix |
-| -------- | ----- |
-| `Export doesn't exist in target module` after renaming a component | Run `pnpm generate:importmap` |
-| Admin component never renders | Check path string matches package name + export (`pkg/client#Name`) |
-| Plugin works in dev but not when installed | Ensure `files: ["dist"]` and exports in `package.json` are correct; consumer ran build |
+| Symptom                                                            | Fix                                                                                    |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `Export doesn't exist in target module` after renaming a component | Run `pnpm generate:importmap`                                                          |
+| Admin component never renders                                      | Check path string matches package name + export (`pkg/client#Name`)                    |
+| Plugin works in dev but not when installed                         | Ensure `files: ["dist"]` and exports in `package.json` are correct; consumer ran build |
 
 The linked package name in the dev app's `package.json` must match the string used in component paths:
 
 ```json
 "dependencies": {
-  "payload-visual-editor": "link:."
+  "payload-plugin-visual-editor": "link:."
 }
 ```
 
 ```typescript
-'payload-visual-editor/client#VisualEditorAdmin'
+'payload-plugin-visual-editor/client#VisualEditorAdmin'
 ```
 
 ---
@@ -298,7 +301,7 @@ Register components in the plugin by path string, not by direct import:
 ```typescript
 collection.admin.components.edit.beforeDocumentControls = [
   ...(collection.admin.components.edit.beforeDocumentControls || []),
-  'payload-visual-editor/client#VisualEditorAdmin',
+  'payload-plugin-visual-editor/client#VisualEditorAdmin',
 ]
 ```
 
@@ -363,14 +366,14 @@ Document this pattern in your plugin README so consumers implement preview pages
 
 ## Case study: DOM editing in live preview
 
-Lessons from `payload-visual-editor` that apply to any plugin manipulating preview DOM.
+Lessons from `payload-plugin-visual-editor` that apply to any plugin manipulating preview DOM.
 
 ### Prefer field-scoped `contenteditable` blocks
 
-| Approach | Result |
-| -------- | ------ |
-| Wrap individual words in `<span>` | Breaks native text selection |
-| Make entire `<main>` contenteditable | User can delete boundaries between fields |
+| Approach                                     | Result                                                |
+| -------------------------------------------- | ----------------------------------------------------- |
+| Wrap individual words in `<span>`            | Breaks native text selection                          |
+| Make entire `<main>` contenteditable         | User can delete boundaries between fields             |
 | Stamp per-field wrappers with `data-ve-path` | Native selection inside a field; boundaries preserved |
 
 ### Rich text: largest wrapping block wins

@@ -1,4 +1,4 @@
-# payload-visual-editor
+# payload-plugin-visual-editor
 
 Inline visual editing for [Payload CMS](https://payloadcms.com) live preview.
 
@@ -12,8 +12,8 @@ Edit text directly in the preview iframe. Changes sync back to the admin documen
 <br>
 
 <video controls preload="none" poster="media/video-poster.png" width="720">
-  <source src="media/payload-visual-editor.mov" type="video/quicktime">
-  <a href="media/payload-visual-editor.mov">Play or download demo</a>
+  <source src="media/payload-visual-editor.mp4" type="video/mp4">
+  <a href="media/payload-visual-editor.mp4">Play or download demo</a>
 </video>
 
 </details>
@@ -36,10 +36,8 @@ Edit text directly in the preview iframe. Changes sync back to the admin documen
 
 ## Installation
 
-> **Not yet published to npm.** Install from a local checkout or git URL until the first release.
-
 ```bash
-pnpm add @krzysztofradomski/payload-visual-editor
+pnpm add payload-plugin-visual-editor
 ```
 
 ## Setup
@@ -47,7 +45,7 @@ pnpm add @krzysztofradomski/payload-visual-editor
 ### 1. Register the plugin
 
 ```ts
-import { payloadVisualEditor } from '@krzysztofradomski/payload-visual-editor'
+import { payloadVisualEditor } from 'payload-plugin-visual-editor'
 
 export default buildConfig({
   plugins: [
@@ -107,7 +105,7 @@ Preview URLs must be served by the same frontend layout where you mount `VisualE
 Add the listener once to the root layout of your live-preview frontend (not the admin layout):
 
 ```tsx
-import { VisualEditorListener } from '@krzysztofradomski/payload-visual-editor/client'
+import { VisualEditorListener } from 'payload-plugin-visual-editor/client'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -120,32 +118,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   )
 }
 ```
-
-### 4. Configure Next.js
-
-Transpile the package and allow ESM subpath imports:
-
-```js
-// next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  transpilePackages: ['@krzysztofradomski/payload-visual-editor'],
-  webpack: (config) => {
-    config.module.rules.push({
-      test: /\.m?js$/,
-      include: /@krzysztofradomski\/payload-visual-editor/,
-      resolve: { fullySpecified: false },
-    })
-    return config
-  },
-}
-
-module.exports = nextConfig
-```
-
-If you already have a `webpack` function, merge this rule into it instead of replacing the whole callback.
-
-If you use `@payloadcms/next/withPayload`, add `transpilePackages` to that config the same way.
 
 ### Collection options
 
@@ -175,10 +147,7 @@ Use the hooks exported from the client entry:
 'use client'
 
 import { subscribe, unsubscribe } from '@payloadcms/live-preview'
-import {
-  useVisualEditorEditMode,
-  useVisualEditorMode,
-} from '@krzysztofradomski/payload-visual-editor/client'
+import { useVisualEditorEditMode, useVisualEditorMode } from 'payload-plugin-visual-editor/client'
 import { useEffect, useRef, useState } from 'react'
 
 export function ArticlePreview({ initialArticle, serverURL }) {
@@ -251,21 +220,20 @@ Returns `400` if the collection is not enabled for visual editing.
 
 ## Exports
 
-| Import                                              | Description                                                                 |
-| --------------------------------------------------- | --------------------------------------------------------------------------- |
-| `@krzysztofradomski/payload-visual-editor`          | Plugin (`payloadVisualEditor`) and types                                    |
-| `@krzysztofradomski/payload-visual-editor/client` | `VisualEditorListener`, hooks, `VisualEditorAdmin` (registered by the plugin) |
-| `@krzysztofradomski/payload-visual-editor/rsc`    | Re-exports for RSC-compatible setups                                        |
+| Import                                | Description                                                                   |
+| ------------------------------------- | ----------------------------------------------------------------------------- |
+| `payload-plugin-visual-editor`        | Plugin (`payloadVisualEditor`) and types                                      |
+| `payload-plugin-visual-editor/client` | `VisualEditorListener`, hooks, `VisualEditorAdmin` (registered by the plugin) |
+| `payload-plugin-visual-editor/rsc`    | Re-exports for RSC-compatible setups                                          |
 
 ## Troubleshooting
 
-| Issue | What to check |
-| ----- | ------------- |
-| **Edit** button missing | Collection enabled in `payloadVisualEditor({ collections })` and live preview configured |
-| No blue outlines in preview | `VisualEditorListener` mounted in the preview frontend layout; field text is visible in the DOM |
-| Edits lost while typing | Preview page re-renders on live-preview updates — use the pause/flush pattern above |
-| Admin build error after install | Run `payload generate:importmap` in your project |
-| Module not found / ESM errors in Next.js | Add `transpilePackages` and the webpack `fullySpecified` rule (see setup step 4) |
+| Issue                           | What to check                                                                                   |
+| ------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Edit** button missing         | Collection enabled in `payloadVisualEditor({ collections })` and live preview configured        |
+| No blue outlines in preview     | `VisualEditorListener` mounted in the preview frontend layout; field text is visible in the DOM |
+| Edits lost while typing         | Preview page re-renders on live-preview updates — use the pause/flush pattern above             |
+| Admin build error after install | Run `payload generate:importmap` in your project                                                |
 
 ## Contributing
 
@@ -274,3 +242,7 @@ This repository is also a Payload plugin template. For local development, testin
 ## License
 
 MIT
+
+## Note
+
+This is open source work for self hosted Payload CMS instances. This plugin has no relation to the official Payload CMS [enterprise visual editor](https://payloadcms.com/enterprise/visual-editor).
