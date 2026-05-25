@@ -48,14 +48,14 @@ payload-plugin-visual-editor/
 
 ### Key conventions
 
-| Concern             | Pattern                                                                         |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Plugin shape        | `(options) => (config) => Config` — curried function                            |
-| Published output    | SWC compiles `src/` → `dist/`; only `dist/` is published                        |
-| Payload dependency  | `peerDependencies.payload` — never bundle Payload                               |
-| Admin components    | Register as `'package-name/client#ExportName'` in config                        |
-| Local consumption   | `"payload-plugin-visual-editor": "link:."` in root `package.json`               |
-| CLI against dev app | `pnpm dev:payload <command>` sets `PAYLOAD_CONFIG_PATH=./dev/payload.config.ts` |
+| Concern             | Pattern                                                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Plugin shape        | `(options) => (config) => Config` — curried function                                                                          |
+| Published output    | SWC compiles `src/` → `dist/`; only `dist/` is published                                                                      |
+| Payload dependency  | `peerDependencies.payload` — never bundle Payload                                                                             |
+| Admin components    | Register as `'package-name/client#ExportName'` in config                                                                      |
+| Local consumption   | `tsconfig` paths + Next `turbopack.resolveAlias` / `webpack.resolve.alias` map the package name to `src/` — no self-link dep  |
+| CLI against dev app | `pnpm dev:payload <command>` sets `PAYLOAD_CONFIG_PATH=./dev/payload.config.ts`                                               |
 
 ---
 
@@ -98,10 +98,14 @@ export const myPlugin =
 
 `pnpm dev` starts `next dev dev --turbo` — the second `dev` is the Next.js app directory (`dev/`).
 
-The dev config imports the plugin from the linked package:
+To keep the published `package.json` clean (no `link:.` self-dependency, which the npm registry explicitly warns against), the dev app resolves the plugin under its **published name** through three small pieces of glue instead of a real `node_modules` install:
+
+1. **`dev/tsconfig.json` paths** — map `payload-plugin-visual-editor`, `…/client`, and `…/rsc` to source files in `../src/` for TypeScript and editors.
+2. **`dev/next.config.mjs` aliases** — `turbopack.resolveAlias` + `webpack.resolve.alias` map the `/client` and `/rsc` subpaths to the same source files at runtime. This is what makes the auto-generated `dev/app/(payload)/admin/importMap.js`, `dev/app/(frontend)/layout.tsx`, and `dev/components/PostPreview.tsx` resolve cleanly.
+3. **Relative import in `dev/payload.config.ts`** — Payload's CLI (`pnpm dev:payload`) loads this file under plain Node, where Next aliases don't apply. So it imports the plugin entry directly:
 
 ```typescript
-import { payloadVisualEditor } from 'payload-plugin-visual-editor'
+import { payloadVisualEditor } from '../src/index.js'
 
 export default buildConfig({
   plugins: [payloadVisualEditor({ collections: { posts: true } })],
@@ -109,13 +113,9 @@ export default buildConfig({
 })
 ```
 
-After changing plugin source, rebuild if the dev app imports from `dist/`:
+Because aliases point straight at `src/`, you do **not** need to `pnpm build` between plugin source edits — Next picks up `.ts` files via its normal compilation. Run `pnpm build` only when you want to validate the published artifact (`dist/`) or test the tarball.
 
-```bash
-pnpm build
-```
-
-During active plugin work, consider a watch build or importing from `src/` only inside the monorepo (the template publishes from `dist/`).
+If you add a new public entry point under `src/exports/`, update **both** the tsconfig `paths` and the alias map in `dev/next.config.mjs` to keep the dev app resolving it.
 
 ### 2. Generate types and import map
 
@@ -143,21 +143,36 @@ export { BeforeDashboard } from '../components/BeforeDashboard.js'
 
 ### 3. Next.js config for plugins
 
-The dev app uses `@payloadcms/next/withPayload` and transpiles the plugin package:
+The dev app uses `@payloadcms/next/withPayload`. Because it resolves the plugin via source aliases instead of a real install, it does **not** need `transpilePackages` for itself — Next compiles the aliased `.ts` files as if they were local project code:
 
 ```javascript
 // dev/next.config.mjs
+const pluginSrc = path.resolve(dirname, '../src')
+
+const pluginSubpathAliases = {
+  'payload-plugin-visual-editor/client': path.resolve(pluginSrc, 'exports/client.ts'),
+  'payload-plugin-visual-editor/rsc': path.resolve(pluginSrc, 'exports/rsc.ts'),
+}
+
 export default withPayload(
   {
-    transpilePackages: ['payload-plugin-visual-editor'],
+    turbopack: { resolveAlias: pluginSubpathAliases },
+    webpack: (cfg) => {
+      cfg.resolve.alias = { ...cfg.resolve.alias, ...pluginSubpathAliases }
+      cfg.resolve.extensionAlias = {
+        '.cjs': ['.cts', '.cjs'],
+        '.js': ['.ts', '.tsx', '.js', '.jsx'],
+        '.mjs': ['.mts', '.mjs'],
+      }
+      return cfg
+    },
     serverExternalPackages: ['mongodb-memory-server'],
-    // webpack rule for fullySpecified: false on plugin ESM
   },
   { devBundleServerPackages: false },
 )
 ```
 
-Consumers of your plugin need `transpilePackages` (and often the webpack `fullySpecified` rule) in their own Next.js config.
+**Consumers** install the plugin normally and import from `dist/` — they don't need these aliases. The plugin ships compiled ESM via SWC, so `transpilePackages` is typically unnecessary; recommend it in your README only if you observe parse errors in a downstream Next project.
 
 ### 4. Package exports
 
@@ -216,17 +231,19 @@ Payload resolves admin React components through `dev/app/(payload)/admin/importM
 | Admin component never renders                                      | Check path string matches package name + export (`pkg/client#Name`)                    |
 | Plugin works in dev but not when installed                         | Ensure `files: ["dist"]` and exports in `package.json` are correct; consumer ran build |
 
-The linked package name in the dev app's `package.json` must match the string used in component paths:
+The alias keys in `dev/next.config.mjs` (and the entries in `dev/tsconfig.json` `paths`) must match the string used in component paths — otherwise the auto-generated `importMap.js` will fail to resolve:
 
-```json
-"dependencies": {
-  "payload-plugin-visual-editor": "link:."
-}
+```javascript
+// dev/next.config.mjs — alias keys
+'payload-plugin-visual-editor/client': '…/src/exports/client.ts'
 ```
 
 ```typescript
+// src/index.ts — path string baked into the registered admin component
 'payload-plugin-visual-editor/client#VisualEditorAdmin'
 ```
+
+If you rename the package, update both sides plus the tsconfig paths in one go.
 
 ---
 

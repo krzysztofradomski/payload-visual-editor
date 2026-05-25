@@ -239,6 +239,19 @@ Returns `400` if the collection is not enabled for visual editing.
 
 This repository is also a Payload plugin template. For local development, testing, and release workflow, see [development.sketch.md](./development.sketch.md).
 
+### Local development setup
+
+The plugin's source lives in `src/`, but the dev app in `dev/` (and Payload's auto-generated `dev/app/(payload)/admin/importMap.js`) imports it under its **published** name — `payload-plugin-visual-editor/client` and `payload-plugin-visual-editor/rsc` — so the dev environment mirrors what consumers see in their own projects.
+
+Because the plugin is not actually installed in `node_modules` during local development, those subpath imports are wired up through two small pieces of glue (instead of a `link:.` self-dependency in `package.json`, which would pollute the published manifest):
+
+- **`dev/tsconfig.json`** — `compilerOptions.paths` maps `payload-plugin-visual-editor`, `…/client`, and `…/rsc` to the matching files under `../src/`. This is what TypeScript and editors use for type checking and go-to-definition.
+- **`dev/next.config.mjs`** — `turbopack.resolveAlias` and `webpack.resolve.alias` map the `/client` and `/rsc` subpaths to the same source files at runtime, so both `pnpm dev --turbo` and the standard webpack build resolve them without a real package install.
+
+`dev/payload.config.ts` is loaded by the Payload CLI (Node, not Next), so it imports `payloadVisualEditor` via a plain relative path (`../src/index.js`) — Node never sees the package name.
+
+If you add a new public entry point under `src/exports/`, update both the tsconfig paths and the alias map in `dev/next.config.mjs` to keep the dev app resolving it.
+
 ## License
 
 MIT
