@@ -4,6 +4,16 @@
   "description": "Inline visual editing for Payload CMS live preview (text fields)",
   "license": "MIT",
   "type": "module",
+  "keywords": [
+    "payload",
+    "payloadcms",
+    "payload-plugin",
+    "cms",
+    "headless-cms",
+    "visual-editor",
+    "inline-editing",
+    "payload-plugin-visual-editor"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
