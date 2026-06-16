@@ -7,17 +7,6 @@ Inline visual editing for [Payload CMS](https://payloadcms.com) live preview.
 
 Edit text directly in the preview iframe. Changes sync back to the admin document form and save as a draft when you click **Done**.
 
-<details>
-<summary><b>Demo video</b> — click to expand (~9 MB, loads on demand)</summary>
-<br>
-
-<video controls preload="none" poster="media/video-poster.png" width="720">
-  <source src="https://github.com/krzysztofradomski/payload-visual-editor/raw/refs/heads/main/media/payload-visual-editor.mp4" type="video/mp4">
-  <a href="https://github.com/krzysztofradomski/payload-visual-editor/raw/refs/heads/main/media/payload-visual-editor.mp4">Play or download demo</a>
-</video>
-
-</details>
-
 ## Features
 
 - Edit **text**, **textarea**, **number**, and **richText** fields from the live preview
