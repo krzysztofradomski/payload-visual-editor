@@ -4,14 +4,7 @@ import type { EditableFieldDescriptor, EditableFieldType } from '../types.js'
 
 import { isEditableFieldType } from '../types.js'
 
-const NESTED_FIELD_TYPES = new Set([
-  'array',
-  'blocks',
-  'collapsible',
-  'group',
-  'row',
-  'tabs',
-])
+const NESTED_FIELD_TYPES = new Set(['array', 'blocks', 'collapsible', 'group', 'row', 'tabs'])
 
 function getFieldsFromContainer(field: Field): Field[] {
   if (field.type === 'tabs') {

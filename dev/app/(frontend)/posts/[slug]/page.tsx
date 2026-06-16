@@ -1,9 +1,9 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
-import { notFound } from 'next/navigation'
+
+import type { DevPost } from '../../../../lib/types.js'
 
 import { PostPreview } from '../../../../components/PostPreview.js'
-import type { DevPost } from '../../../../lib/types.js'
 
 const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
@@ -28,7 +28,7 @@ export default async function PostPage({ params }: Args) {
   const post = docs[0] as DevPost | undefined
 
   if (!post) {
-    notFound()
+    return <div>Post not found</div>
   }
 
   return <PostPreview initialPost={post} serverURL={serverURL} />

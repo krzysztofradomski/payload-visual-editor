@@ -1,5 +1,4 @@
 import config from '@payload-config'
-import Link from 'next/link'
 import { getPayload } from 'payload'
 
 import type { DevPost } from '../../../lib/types.js'
@@ -24,10 +23,10 @@ export default async function PostsIndexPage() {
         <ul className="post-list">
           {posts.map((post) => (
             <li key={post.id}>
-              <Link href={`/posts/${post.slug}`}>
+              <a href={`/posts/${post.slug}`}>
                 <h2>{post.title}</h2>
                 {post.excerpt ? <p>{post.excerpt}</p> : null}
-              </Link>
+              </a>
             </li>
           ))}
         </ul>

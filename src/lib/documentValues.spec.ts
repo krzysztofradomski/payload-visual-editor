@@ -25,13 +25,10 @@ describe('documentValues', () => {
   })
 
   it('builds display values for editable fields', () => {
-    const entries = buildFieldValueEntries(
-      { title: 'News', views: 12 },
-      [
-        { type: 'text', path: 'title' },
-        { type: 'number', path: 'views' },
-      ],
-    )
+    const entries = buildFieldValueEntries({ title: 'News', views: 12 }, [
+      { type: 'text', path: 'title' },
+      { type: 'number', path: 'views' },
+    ])
 
     expect(entries).toEqual([
       { type: 'text', displayValue: 'News', path: 'title' },
@@ -86,14 +83,11 @@ describe('documentValues', () => {
     })
 
     it('skips fields with no display value in buildFieldValueEntries', () => {
-      const entries = buildFieldValueEntries(
-        { title: '', views: null },
-        [
-          { type: 'text', path: 'title' },
-          { type: 'number', path: 'views' },
-          { type: 'text', path: 'missing' },
-        ],
-      )
+      const entries = buildFieldValueEntries({ title: '', views: null }, [
+        { type: 'text', path: 'title' },
+        { type: 'number', path: 'views' },
+        { type: 'text', path: 'missing' },
+      ])
 
       expect(entries).toEqual([])
     })

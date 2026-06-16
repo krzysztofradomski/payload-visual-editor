@@ -47,22 +47,26 @@ export function plainTextToLexical(text: string) {
               version: 1,
             },
           ],
-          direction: 'ltr',
-          format: '',
+          direction: 'ltr' as const,
+          format: '' as const,
           indent: 0,
           textFormat: 0,
           version: 1,
         },
       ],
-      direction: 'ltr',
-      format: '',
+      direction: 'ltr' as const,
+      format: '' as const,
       indent: 0,
       version: 1,
     },
   }
 }
 
-export function replaceFirstInsensitive(source: string, search: string, replacement: string): string {
+export function replaceFirstInsensitive(
+  source: string,
+  search: string,
+  replacement: string,
+): string {
   const index = source.toLocaleLowerCase().indexOf(search.toLocaleLowerCase())
 
   if (index === -1) {
@@ -102,7 +106,7 @@ export function coerceVisualEditorValue(
       return currentValue
     }
 
-    if (currentValue && typeof currentValue === 'object' && 'root' in (currentValue)) {
+    if (currentValue && typeof currentValue === 'object' && 'root' in currentValue) {
       const currentPlain = lexicalToPlainText(currentValue)
       const segment = originalSegment?.trim()
 

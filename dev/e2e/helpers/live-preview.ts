@@ -1,4 +1,5 @@
 import type { FrameLocator, Page } from '@playwright/test'
+
 import { expect } from '@playwright/test'
 
 import { loginAsAdmin } from './auth.js'
@@ -26,7 +27,7 @@ async function getSeedPostId(page: Page): Promise<string> {
 
   expect(postId).toBeTruthy()
 
-  return postId!
+  return postId
 }
 
 export async function openSeedPostEditor(page: Page) {

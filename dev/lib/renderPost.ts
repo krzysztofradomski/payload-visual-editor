@@ -1,6 +1,6 @@
-import { lexicalToPlainText } from '../../src/lib/richText.js'
-
 import type { DevPost } from './types.js'
+
+import { lexicalToPlainText } from '../../src/lib/richText.js'
 
 export function renderRichText(value: unknown): string {
   const plain = lexicalToPlainText(value)

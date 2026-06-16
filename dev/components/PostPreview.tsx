@@ -4,8 +4,9 @@ import { subscribe, unsubscribe } from '@payloadcms/live-preview'
 import { useVisualEditorEditMode, useVisualEditorMode } from 'payload-plugin-visual-editor/client'
 import { useEffect, useRef, useState } from 'react'
 
-import { formatPostMeta, renderRichText } from '../lib/renderPost.js'
 import type { DevPost } from '../lib/types.js'
+
+import { formatPostMeta, renderRichText } from '../lib/renderPost.js'
 
 type Props = {
   initialPost: DevPost

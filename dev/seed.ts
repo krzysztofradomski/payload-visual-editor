@@ -1,18 +1,17 @@
 import type { Payload } from 'payload'
 
 import { plainTextToLexical } from '../src/lib/richText.js'
-
 import { devUser } from './helpers/credentials.js'
 
 const samplePosts = [
   {
-    title: 'Welcome to the visual editor demo',
     slug: 'hello-world',
-    excerpt: 'Try live preview and inline editing from the admin panel.',
-    views: 128,
     content: plainTextToLexical(
       'This is sample post body content. Open live preview in admin, click Edit, and click this text to change it inline.',
     ),
+    excerpt: 'Try live preview and inline editing from the admin panel.',
+    title: 'Welcome to the visual editor demo',
+    views: 128,
   },
 ]
 

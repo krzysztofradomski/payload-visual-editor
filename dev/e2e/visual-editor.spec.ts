@@ -2,12 +2,11 @@ import { expect, test } from '@playwright/test'
 
 import { loginAsAdmin } from './helpers/auth.js'
 import {
+  enableLivePreview,
   enterVisualEditMode,
   exitVisualEditMode,
-  enableLivePreview,
   getPreviewFrame,
   openSeedPostEditor,
-  SEED_POST_TITLE,
   waitForPreviewContent,
 } from './helpers/live-preview.js'
 
@@ -31,10 +30,10 @@ test.describe('visual editor', () => {
     expect(body.collection).toBe('posts')
     expect(body.fields).toEqual(
       expect.arrayContaining([
-        { path: 'title', type: 'text' },
-        { path: 'excerpt', type: 'textarea' },
-        { path: 'views', type: 'number' },
-        { path: 'content', type: 'richText' },
+        { type: 'text', path: 'title' },
+        { type: 'textarea', path: 'excerpt' },
+        { type: 'number', path: 'views' },
+        { type: 'richText', path: 'content' },
       ]),
     )
   })

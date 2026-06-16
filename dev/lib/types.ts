@@ -1,10 +1,10 @@
 export type DevPost = {
-  id: string
-  title: string
-  slug: string
-  excerpt?: string | null
-  views?: number | null
   content?: unknown
   createdAt?: string
+  excerpt?: null | string
+  id: string
+  slug: string
+  title: string
   updatedAt?: string
+  views?: null | number
 }
