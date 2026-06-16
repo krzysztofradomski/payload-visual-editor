@@ -2,8 +2,8 @@
 
 Inline visual editing for [Payload CMS](https://payloadcms.com) live preview.
 
-![Payload admin preview toolbar closed](media/toolbar-menu-closed.png)
-![Payload admin preview toolbar opened](media/toolbar-menu-opened.png)
+![Payload admin preview toolbar closed](https://raw.githubusercontent.com/krzysztofradomski/payload-visual-editor/refs/heads/main/media/toolbar-menu-closed.png)
+![Payload admin preview toolbar opened](https://raw.githubusercontent.com/krzysztofradomski/payload-visual-editor/main/media/toolbar-menu-opened.png)
 
 Edit text directly in the preview iframe. Changes sync back to the admin document form and save as a draft when you click **Done**.
 
@@ -12,8 +12,8 @@ Edit text directly in the preview iframe. Changes sync back to the admin documen
 <br>
 
 <video controls preload="none" poster="media/video-poster.png" width="720">
-  <source src="media/payload-visual-editor.mp4" type="video/mp4">
-  <a href="media/payload-visual-editor.mp4">Play or download demo</a>
+  <source src="https://github.com/krzysztofradomski/payload-visual-editor/raw/refs/heads/main/media/payload-visual-editor.mp4" type="video/mp4">
+  <a href="https://github.com/krzysztofradomski/payload-visual-editor/raw/refs/heads/main/media/payload-visual-editor.mp4">Play or download demo</a>
 </video>
 
 </details>
