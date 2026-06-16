@@ -1,6 +1,6 @@
 {
   "name": "payload-plugin-visual-editor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Inline visual editing for Payload CMS live preview (text fields)",
   "license": "MIT",
   "type": "module",
