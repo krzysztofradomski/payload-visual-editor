@@ -1,8 +1,17 @@
 {
   "name": "payload-plugin-visual-editor",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Inline visual editing for Payload CMS live preview (text fields)",
   "license": "MIT",
+  "author": "Krzysztof Radomski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krzysztofradomski/payload-visual-editor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/krzysztofradomski/payload-visual-editor/issues"
+  },
+  "homepage": "https://github.com/krzysztofradomski/payload-visual-editor#readme",
   "type": "module",
   "keywords": [
     "payload",
